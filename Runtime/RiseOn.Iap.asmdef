@@ -1,0 +1,29 @@
+{
+    "name": "RiseOn.Iap",
+    "rootNamespace": "RiseOn.Iap",
+    "references": [
+        "UniTask",
+        "RiseOn.Utils",
+        "Unity.Purchasing",
+        "Unity.Purchasing.Security",
+        "Unity.Purchasing.SecurityStub",
+        "Unity.Purchasing.SecurityCore",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "RISEON_INPUT_SYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}

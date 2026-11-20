@@ -1,0 +1,79 @@
+﻿using UnityEngine.Purchasing;
+
+namespace RiseOn.Iap {
+    /// <summary>
+    /// A paid purchase for the game to grant.<br/>
+    /// A new one the pack confirms to the store once the grant returns; until then the store hands it again at every launch, so the grant must skip a transaction it already gave, by saving <see cref="TransactionId"/> in the same save as the content.<br/>
+    /// Also a non-consumable the store confirmed long ago, which the game's save does not hold, such as on Google Play after a reinstall or on a new device; that one needs no confirmation.
+    /// </summary>
+    public sealed class IapOrder {
+        /// <summary>The catalog id; the store's own id when the catalog no longer has the product.</summary>
+        public string ProductId { get; }
+
+        /// <summary>0, no member, when the catalog no longer has the product; <see cref="ProductId"/> names it.</summary>
+        public IapProductId Product { get; }
+
+        public IapProductType Type { get; }
+        public int Quantity { get; }
+
+        /// <summary>The same for every delivery of one purchase: Google Play's purchase token, the App Store's transaction id.</summary>
+        public string TransactionId { get; }
+
+        /// <summary>The answer to the purchase the pack is running, rather than one the store returned on its own.</summary>
+        public bool Requested { get; }
+
+        /// <summary>What the game passed to the purchase this answers, for its own analytics; null when not <see cref="Requested"/>.</summary>
+        public string Placement { get; }
+
+        internal IapOrder(Order order, IapProductId product, string productId, IapProductType type, int quantity, bool requested, string placement) {
+            Product       = product;
+            ProductId     = productId;
+            Type          = type;
+            Quantity      = quantity;
+            TransactionId = order.Info.TransactionID;
+            Requested     = requested;
+            Placement     = placement;
+        }
+
+        public override string ToString() => $"{ProductId} x{Quantity} ({TransactionId})";
+    }
+
+    public enum IapResult {
+        /// <summary>The game granted the purchase and the pack confirmed it to the store.</summary>
+        Purchased
+      , Cancelled
+
+        /// <summary>Waiting for approval (Ask to Buy, a pending payment); the grant comes when the store approves, maybe in a later session.</summary>
+      , Deferred
+      , Failed
+    }
+
+    /// <summary>A purchase the store confirmed in this session, once.</summary>
+    public readonly struct IapPurchase {
+        public readonly string ProductId;
+        public readonly int Quantity;
+
+        /// <summary>The price the player paid for the whole quantity, in <see cref="Currency"/>.</summary>
+        public readonly decimal Value;
+
+        /// <summary>ISO 4217.</summary>
+        public readonly string Currency;
+
+        /// <summary>As <see cref="IapOrder.TransactionId"/>.</summary>
+        public readonly string TransactionId;
+
+        /// <summary>The id the store shows the player and its reports: Google Play's order id (GPA.…), the App Store's transaction id.</summary>
+        public readonly string OrderId;
+
+        internal IapPurchase(string productId, int quantity, decimal value, string currency, string transactionId, string orderId) {
+            ProductId     = productId;
+            Quantity      = quantity;
+            Value         = value;
+            Currency      = currency;
+            TransactionId = transactionId;
+            OrderId       = orderId;
+        }
+
+        public override string ToString() => $"{ProductId} x{Quantity}: {Value} {Currency} ({OrderId})";
+    }
+}
