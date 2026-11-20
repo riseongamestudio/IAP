@@ -5,8 +5,10 @@ using UnityEngine;
 namespace RiseOn.Iap {
     /// <summary>
     /// The game's IAP manager: the one partial class deriving from this, which grants every paid purchase and which the rest of the game calls for purchases; Project Settings > RiseOn > IAP edits its fields.<br/>
-    /// It wraps all of <see cref="IapSdk"/>. The pack makes it just before the first scene; a second class deriving from this does not compile. The pack's source generator adds <c>Ins</c>, the running instance.<br/>
-    /// The pack runs every paid purchase the same way: it waits for <see cref="WaitUntilCanGrantAsync"/>, skips a transaction <see cref="IsGranted"/> knows, calls <see cref="GrantAsync"/> and <see cref="OnGranted"/>, confirms, and after the store's confirmation of a consumable calls <see cref="ForgetAsync"/>.
+    /// It wraps all of <see cref="IapSdk"/>.<br/>
+    /// The pack makes it just before the first scene; a second class deriving from this does not compile.<br/>
+    /// The pack's source generator adds <c>Ins</c>, the running instance.<br/>
+    /// The pack runs every paid purchase the same way: it waits for <see cref="WaitUntilCanGrantAsync"/>, skips a transaction <see cref="IsGranted"/> knows, calls <see cref="GrantAsync"/> and <see cref="OnGranted"/>, confirms, and after the store's confirmation of a consumable calls <see cref="ForgetAsync"/>.<br/>
     /// A non-consumable the store returns as confirmed already, as Google Play does after a reinstall, goes the same way up to <see cref="OnGranted"/>, with nothing to confirm.<br/>
     /// Unity's thread only; every event comes on it.
     /// </summary>

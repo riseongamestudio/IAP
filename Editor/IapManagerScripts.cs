@@ -13,7 +13,9 @@ namespace RiseOn.Iap.Editor {
     /// </summary>
     internal static class IapManagerScripts {
         /// <summary>Every class the pack could run; the source generator lets only one compile in an assembly.</summary>
-        internal static List<Type> Candidates() => TypeCache.GetTypesDerivedFrom<IapManagerBase>().Where(type => !type.IsAbstract).ToList();
+        internal static List<Type> Candidates() {
+            return TypeCache.GetTypesDerivedFrom<IapManagerBase>().Where(type => !type.IsAbstract).ToList();
+        }
 
         internal static string Problem(Type type) {
             if (type.GetConstructor(Type.EmptyTypes) == null) return $"{type.Name} needs a constructor without parameters";

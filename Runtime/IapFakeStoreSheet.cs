@@ -3,20 +3,19 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Purchasing;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM && RISEON_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM && IAP_SUPPORT_INPUTSYSTEM
 using UnityEngine.InputSystem.UI;
 #endif
 
 namespace RiseOn.Iap {
     /// <summary>
     /// The fake store's payment sheet: the product as the catalog describes it, and how the purchase ends.<br/>
-    /// Built in code over every canvas and laid out on a 400 x 720 screen shrunk to fit, so it reads alike on a phone and in the Game view;
-    /// its clock is unscaled, as games often pause under a shop.
+    /// Built in code over every canvas and laid out on a 400 x 720 screen shrunk to fit, so it reads alike on a phone and in the Game view; its clock is unscaled, as games often pause under a shop.
     /// </summary>
     internal sealed class IapFakeStoreSheet : MonoBehaviour {
         public enum Answer { Buy, Cancel, Decline, Defer }
 
-        private static readonly Vector2 Layout = new(400, 720);
+        private static readonly Vector2 layout = new(400, 720);
 
         private const float OpenTime  = 0.28f;
         private const float CloseTime = 0.18f;
@@ -27,15 +26,15 @@ namespace RiseOn.Iap {
         // The background runs this far past the screen's bottom, so only its top corners show round.
         private const float Overhang = 24;
 
-        private static readonly Color Dim      = new(0, 0, 0, 0.45f);
-        private static readonly Color Surface  = Color.white;
-        private static readonly Color Ink      = new(0.11f, 0.11f, 0.12f);
-        private static readonly Color Muted    = new(0.42f, 0.42f, 0.45f);
-        private static readonly Color Rule     = new(0.89f, 0.89f, 0.91f);
-        private static readonly Color Accent   = new(0, 0.48f, 1);
-        private static readonly Color Quiet    = new(0.94f, 0.94f, 0.96f);
-        private static readonly Color Badge    = new(1, 0.62f, 0.04f, 0.18f);
-        private static readonly Color BadgeInk = new(0.6f, 0.34f, 0);
+        private static readonly Color dimColor      = new(0, 0, 0, 0.45f);
+        private static readonly Color surfaceColor  = Color.white;
+        private static readonly Color inkColor      = new(0.11f, 0.11f, 0.12f);
+        private static readonly Color mutedColor    = new(0.42f, 0.42f, 0.45f);
+        private static readonly Color ruleColor     = new(0.89f, 0.89f, 0.91f);
+        private static readonly Color accentColor   = new(0, 0.48f, 1);
+        private static readonly Color quietColor    = new(0.94f, 0.94f, 0.96f);
+        private static readonly Color badgeColor    = new(1, 0.62f, 0.04f, 0.18f);
+        private static readonly Color badgeInkColor = new(0.6f, 0.34f, 0);
 
         private static Sprite rounded;
         private static Font font;
@@ -50,9 +49,9 @@ namespace RiseOn.Iap {
 
         /// <summary>Opens the sheet; <paramref name="answered"/> runs once, as the sheet starts to leave.</summary>
         public static void Show(ProductMetadata product, IapProductType type, Action<Answer> answered) {
-            // The pack runs one purchase at a time, so a second open sheet is the caller's bug; it ends as cancelled.
+            // The pack runs one purchase at a time, so a second open sheet is the caller's bug; it ends as canceled.
             if (current != null) {
-                Debug.LogWarning($"{nameof(IapFakeStore)}: a purchase sheet is open already, so this one ends as cancelled");
+                Debug.LogWarning($"{nameof(IapFakeStore)}: a purchase sheet is open already, so this one ends as canceled");
                 answered(Answer.Cancel);
                 return;
             }
@@ -66,7 +65,7 @@ namespace RiseOn.Iap {
 
             var scaler = root.AddComponent<CanvasScaler>();
             scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = Layout;
+            scaler.referenceResolution = layout;
             scaler.screenMatchMode     = CanvasScaler.ScreenMatchMode.Shrink;
             root.AddComponent<GraphicRaycaster>();
 
@@ -78,7 +77,7 @@ namespace RiseOn.Iap {
             if (FindAnyObjectByType<EventSystem>() == null) {
                 var events = new GameObject(nameof(EventSystem), typeof(EventSystem));
                 events.transform.SetParent(root.transform, false);
-#if ENABLE_INPUT_SYSTEM && RISEON_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM && IAP_SUPPORT_INPUTSYSTEM
                 events.AddComponent<InputSystemUIInputModule>();
 #else
                 events.AddComponent<StandaloneInputModule>();
@@ -98,47 +97,47 @@ namespace RiseOn.Iap {
 
             sheet           = Child("Sheet", transform);
             sheet.anchorMin = sheet.anchorMax = sheet.pivot = new Vector2(0.5f, 0);
-            sheet.sizeDelta = new Vector2(Layout.x, 0);
+            sheet.sizeDelta = new Vector2(layout.x, 0);
 
-            var scale  = Mathf.Min(Screen.width / Layout.x, Screen.height / Layout.y);
+            var scale  = Mathf.Min(Screen.width / layout.x, Screen.height / layout.y);
             var column = Column(sheet, 12);
             column.padding = new RectOffset(20, 20, 8, 20 + Mathf.RoundToInt(Screen.safeArea.yMin / scale));
             sheet.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            Backdrop(sheet, Surface, 20).offsetMin = new Vector2(0, -Overhang);
+            Backdrop(sheet, surfaceColor, 20).offsetMin = new Vector2(0, -Overhang);
 
             var grip = Fixed(Child("Grip", sheet), 5);
             var pill = Child("Pill", grip);
             pill.anchorMin = pill.anchorMax = new Vector2(0.5f, 0.5f);
             pill.sizeDelta = new Vector2(36, 5);
-            Rounded(pill, Rule, 2.5f);
+            Rounded(pill, ruleColor, 2.5f);
 
             // The badge keeps its text's width, on the left.
             var badge = Row(Child("Badge", Row(Child("Badge Row", sheet), TextAnchor.MiddleLeft, 0).transform), TextAnchor.MiddleCenter, 0);
             badge.padding = new RectOffset(8, 8, 3, 3);
-            Backdrop((RectTransform) badge.transform, Badge, 6);
-            Label(badge.transform, "TEST STORE  ·  NO CHARGE", 11, FontStyle.Bold, BadgeInk, TextAnchor.MiddleLeft);
+            Backdrop((RectTransform) badge.transform, badgeColor, 6);
+            Label(badge.transform, "TEST STORE  ·  NO CHARGE", 11, FontStyle.Bold, badgeInkColor, TextAnchor.MiddleLeft);
 
             var about = Child("Product", sheet);
             Column(about, 4);
-            Label(about, product.localizedTitle, 20, FontStyle.Bold, Ink, TextAnchor.UpperLeft);
-            Label(about, type switch { IapProductType.NonConsumable => "Non-Consumable", IapProductType.Subscription => "Subscription", _ => "Consumable" }, 13, FontStyle.Normal, Muted, TextAnchor.UpperLeft);
-            if (!string.IsNullOrEmpty(product.localizedDescription)) Label(about, product.localizedDescription, 14, FontStyle.Normal, Muted, TextAnchor.UpperLeft);
+            Label(about, product.localizedTitle, 20, FontStyle.Bold, inkColor, TextAnchor.UpperLeft);
+            Label(about, type switch { IapProductType.NonConsumable => "Non-Consumable", IapProductType.Subscription => "Subscription", _ => "Consumable" }, 13, FontStyle.Normal, mutedColor, TextAnchor.UpperLeft);
+            if (!string.IsNullOrEmpty(product.localizedDescription)) Label(about, product.localizedDescription, 14, FontStyle.Normal, mutedColor, TextAnchor.UpperLeft);
 
-            Fixed(Child("Rule", sheet), 1).gameObject.AddComponent<Image>().color = Rule;
+            Fixed(Child("Rule", sheet), 1).gameObject.AddComponent<Image>().color = ruleColor;
 
             var price = Row(Child("Price", sheet), TextAnchor.MiddleLeft, 8);
             price.childForceExpandWidth = true;
-            Label(price.transform, "Price", 15, FontStyle.Normal, Muted, TextAnchor.MiddleLeft);
-            Label(price.transform, product.localizedPriceString, 15, FontStyle.Bold, Ink, TextAnchor.MiddleRight);
+            Label(price.transform, "Price", 15, FontStyle.Normal, mutedColor, TextAnchor.MiddleLeft);
+            Label(price.transform, product.localizedPriceString, 15, FontStyle.Bold, inkColor, TextAnchor.MiddleRight);
 
-            Action(sheet, $"Buy for {product.localizedPriceString}", Accent, Color.white, 48, 17, FontStyle.Bold, Answer.Buy);
-            Action(sheet, "Cancel", Quiet, Accent, 44, 16, FontStyle.Normal, Answer.Cancel);
+            Action(sheet, $"Buy for {product.localizedPriceString}", accentColor, Color.white, 48, 17, FontStyle.Bold, Answer.Buy);
+            Action(sheet, "Cancel", quietColor, accentColor, 44, 16, FontStyle.Normal, Answer.Cancel);
 
             // The endings a tester cannot reach at will on a real store.
             var endings = Row(Child("Endings", sheet), TextAnchor.MiddleCenter, 8);
             Link(endings.transform, "Payment declined", Answer.Decline);
-            Label(endings.transform, "·", 13, FontStyle.Normal, Muted, TextAnchor.MiddleCenter);
+            Label(endings.transform, "·", 13, FontStyle.Normal, mutedColor, TextAnchor.MiddleCenter);
             Link(endings.transform, "Deferred (Ask to Buy)", Answer.Defer);
 
             // Laid out now, so the first frame already starts below the screen.
@@ -162,7 +161,7 @@ namespace RiseOn.Iap {
         // 0: below the screen with no shade; 1: up, with the full shade.
         private void Place(float shown) {
             sheet.anchoredPosition = new Vector2(0, -(sheet.rect.height + Overhang) * (1 - shown));
-            dim.color              = new Color(Dim.r, Dim.g, Dim.b, Dim.a * shown);
+            dim.color              = new Color(dimColor.r, dimColor.g, dimColor.b, dimColor.a * shown);
         }
 
         private void Close(Answer answer) {
@@ -209,7 +208,7 @@ namespace RiseOn.Iap {
             var button = row.gameObject.AddComponent<Button>();
             button.targetGraphic = hit;
             Press(button, answer);
-            Label(row.transform, text, 13, FontStyle.Normal, Accent, TextAnchor.MiddleCenter);
+            Label(row.transform, text, 13, FontStyle.Normal, accentColor, TextAnchor.MiddleCenter);
         }
 
         private void Press(Button button, Answer answer) {

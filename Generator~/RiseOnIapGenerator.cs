@@ -19,15 +19,15 @@ namespace RiseOn.Iap.Generator {
         private const string ManagerType  = "RiseOn.Iap.IapManagerBase";
         private const string ProductsFile = ".RiseOnIapGenerator.additionalfile";
 
-        private static readonly DiagnosticDescriptor NotPartial = new(
+        private static readonly DiagnosticDescriptor notPartial = new(
             "RISEONIAP001", "IAP manager not partial", "{0} derives from IapManagerBase, so it must be a partial class, neither generic nor nested, for the IAP pack to find it and give it Ins",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
-        private static readonly DiagnosticDescriptor NotAlone = new(
+        private static readonly DiagnosticDescriptor notAlone = new(
             "RISEONIAP003", "Several IAP managers", "{0} derives from IapManagerBase, and so does {1}; the IAP pack runs one manager, so only one class may",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
-        private static readonly DiagnosticDescriptor BadLine = new(
+        private static readonly DiagnosticDescriptor badLine = new(
             "RISEONIAP002", "Unreadable product line", "{0} line {1} is not 'number member'; open Project Settings > RiseOn > IAP and press Apply to write it again",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
@@ -36,7 +36,7 @@ namespace RiseOn.Iap.Generator {
         }
 
         public void Execute(GeneratorExecutionContext context) {
-            if (context.Compilation.AssemblyName == PackAssembly) {
+            if (context.Compilation.AssemblyName is PackAssembly) {
                 context.AddSource("IapProductId.g.cs", SourceText.From(ProductEnum(context), Encoding.UTF8));
                 return;
             }
@@ -62,14 +62,14 @@ namespace RiseOn.Iap.Generator {
                 var declaration = found[type];
                 var other       = all.FirstOrDefault(each => !SymbolEqualityComparer.Default.Equals(each, type));
                 if (other != null) {
-                    context.ReportDiagnostic(Diagnostic.Create(NotAlone, declaration.Identifier.GetLocation(), type.ToDisplayString(), other.ToDisplayString()));
+                    context.ReportDiagnostic(Diagnostic.Create(notAlone, declaration.Identifier.GetLocation(), type.ToDisplayString(), other.ToDisplayString()));
                     continue;
                 }
 
                 var partial = type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax()).OfType<ClassDeclarationSyntax>()
                     .All(each => each.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
                 if (!partial || type.IsGenericType || type.ContainingType != null) {
-                    context.ReportDiagnostic(Diagnostic.Create(NotPartial, declaration.Identifier.GetLocation(), type.Name));
+                    context.ReportDiagnostic(Diagnostic.Create(notPartial, declaration.Identifier.GetLocation(), type.Name));
                     continue;
                 }
 
@@ -80,7 +80,7 @@ namespace RiseOn.Iap.Generator {
         // Only assemblies that reference the pack can hold a manager, which keeps the search off the engine's own.
         private static IEnumerable<INamedTypeSymbol> Referenced(Compilation compilation, INamedTypeSymbol manager) {
             foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols) {
-                if (assembly.Name == PackAssembly || !assembly.Modules.Any(module => module.ReferencedAssemblySymbols.Any(each => each.Name == PackAssembly))) continue;
+                if (assembly.Name is PackAssembly || !assembly.Modules.Any(module => module.ReferencedAssemblySymbols.Any(each => each.Name is PackAssembly))) continue;
 
                 foreach (var type in Types(assembly.GlobalNamespace)) {
                     if (!type.IsAbstract && Derives(type, manager)) yield return type;
@@ -113,7 +113,7 @@ namespace RiseOn.Iap.Generator {
 
                     var parts = line.Split(' ');
                     if (parts.Length != 2 || !int.TryParse(parts[0], out var number) || number <= 0 || !SyntaxFacts.IsValidIdentifier(parts[1])) {
-                        context.ReportDiagnostic(Diagnostic.Create(BadLine, Location.None, Path.GetFileName(file.Path), i + 1));
+                        context.ReportDiagnostic(Diagnostic.Create(badLine, Location.None, Path.GetFileName(file.Path), i + 1));
                         continue;
                     }
 
@@ -145,7 +145,9 @@ namespace RiseOn.Iap.Generator {
         }
 
         // A second [Serializable] would not compile.
-        private static bool IsSerializable(INamedTypeSymbol type) => type.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.SerializableAttribute");
+        private static bool IsSerializable(INamedTypeSymbol type) {
+            return type.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.SerializableAttribute");
+        }
 
         private static bool Derives(INamedTypeSymbol type, INamedTypeSymbol root) {
             for (var current = type.BaseType; current != null; current = current.BaseType) {

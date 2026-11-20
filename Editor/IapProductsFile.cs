@@ -9,17 +9,16 @@ using UnityEngine;
 
 namespace RiseOn.Iap.Editor {
     /// <summary>
-    /// The products as the pack's source generator reads them, one "number Member" line each; it compiles them into RiseOn.Iap as
-    /// <see cref="IapProductId"/>.<br/>
-    /// Written when Apply is pressed or chosen as the settings page closes, and when the asset is imported from elsewhere (a pull, a merge) while
-    /// the page is closed; never by hand. A write renames the members the project's scripts name too, so they keep compiling.
+    /// The products as the pack's source generator reads them, one "number Member" line each; it compiles them into RiseOn.Iap as <see cref="IapProductId"/>.<br/>
+    /// Written when Apply is pressed or chosen as the settings page closes, and when the asset is imported from elsewhere (a pull, a merge) while the page is closed; never by hand.<br/>
+    /// A write renames the members the project's scripts name too, so they keep compiling.
     /// </summary>
     internal sealed class IapProductsFile : AssetPostprocessor {
         // Unity hands a project's *.{generator assembly}.additionalfile to that generator.
         internal const string Path = "Assets/RiseOn/IAP/Products.RiseOnIapGenerator.additionalfile";
 
         /// <summary>While the settings page draws: it saves the asset on every edit, and writes the file only when Apply is pressed or chosen as it closes.</summary>
-        internal static bool Held;
+        internal static bool held;
 
         // The products as they were the last time the page saw them match the file, for Revert. In Library, as only this machine kept them.
         private const string AppliedPath = "Library/RiseOn/IapProductsApplied.json";
@@ -34,8 +33,7 @@ namespace RiseOn.Iap.Editor {
         }
 
         /// <summary>
-        /// Products that make the same member, one id listed twice or ids that differ only in case or separators, or that share a number, each
-        /// with the id to edit: the later one's.
+        /// Products that make the same member, one id listed twice or ids that differ only in case or separators, or that share a number, each with the id to edit: the later one's.
         /// </summary>
         internal static IEnumerable<SettingsIssue> Issues(IapSettings settings) {
             var products = settings.Products.Select((entry, index) => (entry, index)).ToList();
@@ -73,8 +71,7 @@ namespace RiseOn.Iap.Editor {
         }
 
         /// <summary>
-        /// Numbers the products, then writes the file when its text would change and nothing stops it, renaming the members the project's scripts
-        /// name first; Unity recompiles after.
+        /// Numbers the products, then writes the file when its text would change and nothing stops it, renaming the members the project's scripts name first; Unity recompiles after.
         /// </summary>
         internal static void Sync(IapSettings settings) {
             Number(settings);
@@ -118,7 +115,9 @@ namespace RiseOn.Iap.Editor {
             AssetDatabase.SaveAssetIfDirty(settings);
         }
 
-        private static string FileText() => File.Exists(Path) ? File.ReadAllText(Path) : "";
+        private static string FileText() {
+            return File.Exists(Path) ? File.ReadAllText(Path) : "";
+        }
 
         private static string LoadAppliedJson() {
             appliedJson ??= File.Exists(AppliedPath) ? File.ReadAllText(AppliedPath) : "";
@@ -183,7 +182,7 @@ namespace RiseOn.Iap.Editor {
 
         // A pull or a merge changed the settings, or someone deleted the file.
         private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom) {
-            if (Held) return;
+            if (held) return;
             if (!imported.Any(path => System.IO.Path.GetFileNameWithoutExtension(path) is IapSettings.ResourceName) && !deleted.Contains(Path)) return;
 
             var settings = IapSettingsProvider.Find();

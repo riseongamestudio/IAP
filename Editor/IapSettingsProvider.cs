@@ -18,8 +18,8 @@ namespace RiseOn.Iap.Editor {
         internal const string PagePath = "Project/RiseOn/IAP";
 
         // Google Play Console's rule; the App Store also takes upper case and hyphens, so Google's is the one to keep.
-        private static readonly Regex ProductIdPattern   = new("^[a-z0-9][a-z0-9_.]{0,39}$");
-        private static readonly Regex ApplePrefixPattern = new("^[A-Za-z0-9_.-]*$");
+        private static readonly Regex productIdPattern   = new("^[a-z0-9][a-z0-9_.]{0,39}$");
+        private static readonly Regex applePrefixPattern = new("^[A-Za-z0-9_.-]*$");
         private const int AppleIdLimit = 100;
 
         // A recompile closes the page as the domain unloads: a write then would land after the compile and wait,
@@ -29,7 +29,9 @@ namespace RiseOn.Iap.Editor {
         private static readonly SettingsTree tree = new();
 
         [InitializeOnLoadMethod]
-        private static void WatchReload() => AssemblyReloadEvents.beforeAssemblyReload += () => reloading = true;
+        private static void WatchReload() {
+            AssemblyReloadEvents.beforeAssemblyReload += () => reloading = true;
+        }
 
         [MenuItem("RiseOn/IAP")]
         internal static void Open() {
@@ -44,13 +46,13 @@ namespace RiseOn.Iap.Editor {
             return new SettingsProvider(PagePath, SettingsScope.Project) {
                 guiHandler = _ => {
                     using var page = SettingsPage.Begin();
-                    IapProductsFile.Held = true;
+                    IapProductsFile.held = true;
                     drawn = true;
                     Draw(LoadOrCreate());
                 }
               , deactivateHandler = () => {
                     // Leaving or closing the window asks once, for every edit made here: one write and one recompile, or none.
-                    IapProductsFile.Held = false;
+                    IapProductsFile.held = false;
                     var settings = Find();
                     if (settings && drawn && !reloading && IapProductsFile.IsPending(settings)) AskOnLeave(settings);
                     drawn = false;
@@ -129,7 +131,7 @@ namespace RiseOn.Iap.Editor {
                 var field = $"products.Array.data[{ids.IndexOf(id)}].id";
                 if (id.Length == 0) {
                     yield return new SettingsIssue(BuildTarget.NoTarget, true, "A product has no id.", fieldAsset: settings, fieldPath: field);
-                } else if (!ProductIdPattern.IsMatch(id) || id.StartsWith("android.test")) {
+                } else if (!productIdPattern.IsMatch(id) || id.StartsWith("android.test")) {
                     yield return new SettingsIssue(BuildTarget.NoTarget, true, $"Product {id}: Google Play takes 1 to 40 lower-case letters, digits, '_' and '.', starting with a letter or digit, and reserves android.test.",
                                                    fieldAsset: settings, fieldPath: field);
                 } else if (settings.ApplePrefix.Length + id.Length > AppleIdLimit) {
@@ -145,7 +147,7 @@ namespace RiseOn.Iap.Editor {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{IapProductsFile.Path} does not list the products, so {nameof(IapProductId)} is out of date: press Apply on the page.");
             }
 
-            if (!ApplePrefixPattern.IsMatch(settings.ApplePrefix)) {
+            if (!applePrefixPattern.IsMatch(settings.ApplePrefix)) {
                 yield return new SettingsIssue(BuildTarget.iOS, true, "The Apple prefix takes letters, digits, '_', '.' and '-', as App Store product ids do.", fieldAsset: settings, fieldPath: "applePrefix");
             }
 

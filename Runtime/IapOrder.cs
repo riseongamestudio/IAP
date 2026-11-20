@@ -35,13 +35,15 @@ namespace RiseOn.Iap {
             Placement     = placement;
         }
 
-        public override string ToString() => $"{ProductId} x{Quantity} ({TransactionId})";
+        public override string ToString() {
+            return $"{ProductId} x{Quantity} ({TransactionId})";
+        }
     }
 
     public enum IapResult {
         /// <summary>The game granted the purchase and the pack confirmed it to the store.</summary>
         Purchased
-      , Cancelled
+      , Canceled
 
         /// <summary>Waiting for approval (Ask to Buy, a pending payment); the grant comes when the store approves, maybe in a later session.</summary>
       , Deferred
@@ -74,6 +76,8 @@ namespace RiseOn.Iap {
             OrderId       = orderId;
         }
 
-        public override string ToString() => $"{ProductId} x{Quantity}: {Value} {Currency} ({OrderId})";
+        public override string ToString() {
+            return $"{ProductId} x{Quantity}: {Value} {Currency} ({OrderId})";
+        }
     }
 }

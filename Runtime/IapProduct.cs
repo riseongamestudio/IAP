@@ -33,6 +33,8 @@ namespace RiseOn.Iap {
             Description = metadata?.localizedDescription ?? "";
         }
 
-        public override string ToString() => Available ? $"{Id} ({Type}): {Price}" : $"{Id} ({Type}): not on the store";
+        public override string ToString() {
+            return Available ? $"{Id} ({Type}): {Price}" : $"{Id} ({Type}): not on the store";
+        }
     }
 }

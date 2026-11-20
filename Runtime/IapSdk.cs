@@ -186,7 +186,7 @@ namespace RiseOn.Iap {
             if (Application.platform is RuntimePlatform.Android && !Settings.FakeStore) validator = new CrossPlatformValidator(Convert.FromBase64String(Settings.GooglePlayKey), Application.identifier);
 
             // The pack's own fake store wherever Unity's would run: in the Editor, on platforms with no store, or when asked.
-            if (Settings.FakeStore || UnityIAPServices.GetDefaultStore() == FakeStoreName) {
+            if (Settings.FakeStore || UnityIAPServices.GetDefaultStore() is FakeStoreName) {
                 fakeStore = new IapFakeStore(Settings);
                 UnityIAPServices.AddNewCustomStore(fakeStore);
             }
@@ -417,7 +417,7 @@ namespace RiseOn.Iap {
 
         private static void OnPurchaseFailed(FailedOrder order) {
             if (order.FailureReason is not PurchaseFailureReason.UserCancelled) Debug.LogWarning($"{nameof(IapSdk)}: purchase of {Describe(order).id} failed ({order.FailureReason}: {order.Details})");
-            if (Answers(order)) Finish(order.FailureReason is PurchaseFailureReason.UserCancelled ? IapResult.Cancelled : IapResult.Failed);
+            if (Answers(order)) Finish(order.FailureReason is PurchaseFailureReason.UserCancelled ? IapResult.Canceled : IapResult.Failed);
         }
 
         private static void OnPurchaseDeferred(DeferredOrder order) {
@@ -457,7 +457,9 @@ namespace RiseOn.Iap {
             }
         }
 
-        private static void RaiseChanged() => Raise(Changed, handler => handler());
+        private static void RaiseChanged() {
+            Raise(Changed, handler => handler());
+        }
 
         // Each handler alone, so that one failing in the game neither stops the others nor the pack's own bookkeeping.
         internal static void Raise<T>(T handlers, Action<T> call) where T : Delegate {
@@ -475,7 +477,9 @@ namespace RiseOn.Iap {
             }
         }
 
-        private static bool Answers(Order order) => running != null && StoreId(order) == running.StoreId;
+        private static bool Answers(Order order) {
+            return running != null && StoreId(order) == running.StoreId;
+        }
 
         private static void Finish(IapResult result) {
             var done = running;
@@ -488,7 +492,9 @@ namespace RiseOn.Iap {
             readySource.TrySetResult();
         }
 
-        private static string StoreId(Order order) => order.CartOrdered.Items().FirstOrDefault()?.Product?.definition?.storeSpecificId ?? "";
+        private static string StoreId(Order order) {
+            return order.CartOrdered.Items().FirstOrDefault()?.Product?.definition?.storeSpecificId ?? "";
+        }
 
         private static (IapProductId product, string id, IapProductType type, int quantity) Describe(Order order) {
             var item = order.CartOrdered.Items().FirstOrDefault();

@@ -24,7 +24,7 @@
         {
             "name": "com.unity.inputsystem",
             "expression": "1.0.0",
-            "define": "RISEON_INPUT_SYSTEM"
+            "define": "IAP_SUPPORT_INPUTSYSTEM"
         }
     ],
     "noEngineReferences": false

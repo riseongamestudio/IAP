@@ -1,4 +1,4 @@
-# RiseOn IAP
+# RiseOn.Iap
 
 Mua trong app bằng Unity IAP 5. Pack tự kết nối cửa hàng khi mở game, lấy sản phẩm
 theo danh sách trong Project Settings, giữ lại những giao dịch cửa hàng trả về khi
@@ -6,29 +6,70 @@ game chưa sẵn sàng, rồi giao cho lớp manager của game. Manager cấp �
 xác nhận với cửa hàng. Lõi là lớp static `IapSdk`; lớp manager bọc toàn bộ `IapSdk`, và
 game gọi mua hàng qua nó.
 
+Package `com.riseon.iap`, namespace `RiseOn.Iap`.
+
+## Mục lục
+
+- [Yêu cầu](#yêu-cầu)
+- [Cài đặt](#cài-đặt)
+- [Viết manager](#viết-manager)
+- [Gọi từ game](#gọi-từ-game)
+- [Cài đặt của project](#cài-đặt-của-project)
+- [Fake store](#fake-store)
+- [Luồng của pack](#luồng-của-pack)
+- [Khi có lỗi](#khi-có-lỗi)
+- [Lịch sử thay đổi](#lịch-sử-thay-đổi)
+- [Giấy phép](#giấy-phép)
+
 ## Yêu cầu
 
-- Unity 6000.0 trở lên.
-- `com.unity.purchasing` 5.4.3, `com.unity.ugui` 2.0.0 (sheet của fake store),
-  `com.cysharp.unitask` 2.5.11 và `com.riseon.utils` (vẽ các mục của trang cài đặt), tự
-  cài theo `package.json`.
-- Odin Inspector, cài tay từ Asset Store: `com.riseon.utils` cần nó.
+| Phụ thuộc | Cách có | Dùng cho |
+|---|---|---|
+| Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của trang cài đặt |
+| `com.unity.purchasing` 5.4.3 | Tự cài theo `package.json` | Unity IAP 5 |
+| `com.unity.ugui` 2.0.0 | Tự cài theo `package.json` | Sheet của fake store |
+| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của trang cài đặt |
+| `com.cysharp.unitask` 2.5.11 | Tự cài theo `package.json`, từ OpenUPM | Các hàm `async` |
+
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ `RiseOn.Iap.Requirements`.
 
 ## Cài đặt
 
-Dev thêm vào `Packages/manifest.json`:
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`, và
+OpenUPM với scope `com.cysharp`, vào `Packages/manifest.json`, rồi thêm package:
 
 ```json
 {
-  "dependencies": {
-    "com.riseon.iap": "1.0.1"
-  },
   "scopedRegistries": [
-    { "name": "RiseOn", "url": "https://upm.riseongamestudio.com", "scopes": [ "com.riseon" ] },
-    { "name": "OpenUPM", "url": "https://package.openupm.com", "scopes": [ "com.cysharp" ] }
-  ]
+    {
+      "name": "RiseOn",
+      "url": "https://upm.riseongamestudio.com",
+      "scopes": ["com.riseon"]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.cysharp"]
+    }
+  ],
+  "dependencies": {
+    "com.riseon.iap": "2.0.0"
+  }
 }
 ```
+
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM như ví
+dụ trên; `com.riseon.utils` lấy từ registry RiseOn, hoặc cài bằng git URL trước. Rồi
+*Package Manager → + → Add package from git URL*:
+
+```
+https://github.com/riseongamestudio/IAP.git
+```
+
+**Thư mục local**: `"com.riseon.iap": "file:D:/path/to/IAP"`.
 
 ## Viết manager
 
@@ -80,7 +121,7 @@ public sealed partial class GameIap : IapManagerBase {
     }
 
     protected override void OnGranted(IapOrder order) {
-        if (order.Product == IapProductId.NoAds) GameAds.Ins.RefreshAdsRemoved();
+        if (order.Product is IapProductId.NoAds) GameAds.Ins.RefreshAdsRemoved();
     }
 
     protected override UniTask ForgetAsync(string transactionId) {
@@ -119,7 +160,7 @@ lưu trong scene, prefab vẫn trỏ đúng sản phẩm khi sản phẩm khác 
 | Kết quả | Nghĩa |
 |---|---|
 | `Purchased` | Đồ đã cấp và lưu, giao dịch đã gửi xác nhận |
-| `Cancelled` | Người chơi đóng bảng thanh toán |
+| `Canceled` | Người chơi đóng bảng thanh toán |
 | `Deferred` | Chờ duyệt (Ask to Buy, thanh toán chậm). Khi được duyệt, có thể ở phiên sau, giao dịch đến manager như mọi giao dịch khác |
 | `Failed` | Cửa hàng chưa trả về sản phẩm, thanh toán lỗi, chữ ký sai, hoặc manager ném lỗi khi cấp; Console có lý do |
 
@@ -203,7 +244,7 @@ giá sản phẩm, cùng các nút kết thúc giao dịch:
 | Nút | `PurchaseAsync` trả về |
 |---|---|
 | **Buy for $…** | `Purchased`, sau khi `GrantAsync` cấp đồ và pack xác nhận |
-| **Cancel**, hoặc chạm ra ngoài sheet | `Cancelled` |
+| **Cancel**, hoặc chạm ra ngoài sheet | `Canceled` |
 | **Payment declined** | `Failed` |
 | **Deferred (Ask to Buy)** | `Deferred`; giao dịch không bao giờ xong, như khi phụ huynh không duyệt |
 
@@ -244,3 +285,11 @@ lại).
 | Manager ném lỗi khi cấp | Log exception, không xác nhận; giao dịch quay lại ở lần mở sau |
 | Cửa hàng không nhận xác nhận | Log cảnh báo; giao dịch quay lại ở lần mở sau, `IsGranted` chặn cấp lần hai |
 | App Store hoàn tiền một món không tiêu hao | `Owns` thành `false`, `IapSdk.Changed` báo. Thu hồi đồ trong save là việc của game |
+
+## Lịch sử thay đổi
+
+Xem [CHANGELOG.md](CHANGELOG.md).
+
+## Giấy phép
+
+MIT, xem [LICENSE.md](LICENSE.md).

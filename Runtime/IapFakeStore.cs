@@ -7,8 +7,7 @@ using UnityEngine.Purchasing.Extension;
 
 namespace RiseOn.Iap {
     /// <summary>
-    /// The pack's fake store, through Unity IAP's custom store API: products as the catalog's Title, Description and Price,
-    /// and each purchase ended on <see cref="IapFakeStoreSheet"/>.<br/>
+    /// The pack's fake store, through Unity IAP's custom store API: products as the catalog's Title, Description and Price, and each purchase ended on <see cref="IapFakeStoreSheet"/>.<br/>
     /// Owned products last for the session, as in Unity's own fake store.
     /// </summary>
     internal sealed class IapFakeStore : Store, IStoreWrapper {
@@ -58,7 +57,7 @@ namespace RiseOn.Iap {
                         PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.PaymentDeclined, "Declined on the fake store"));
                         break;
                     default:
-                        PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.UserCancelled, "Cancelled on the fake store"));
+                        PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.UserCancelled, "Canceled on the fake store"));
                         break;
                 }
             });
@@ -76,7 +75,9 @@ namespace RiseOn.Iap {
             EntitlementCallback?.OnCheckEntitlement(product, Owns(product.storeSpecificId) ? EntitlementStatus.FullyEntitled : EntitlementStatus.NotEntitled);
         }
 
-        private bool Owns(string storeId) => owned.Any(order => order.CartOrdered.Items().Any(item => item.Product.definition.storeSpecificId == storeId));
+        private bool Owns(string storeId) {
+            return owned.Any(order => order.CartOrdered.Items().Any(item => item.Product.definition.storeSpecificId == storeId));
+        }
 
         private ProductMetadata Metadata(ProductDefinition definition) {
             foreach (var entry in settings.Products) {
