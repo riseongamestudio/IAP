@@ -1,10 +1,10 @@
 {
   "name": "com.riseon.iap",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "RiseOn IAP",
   "description": "Unity IAP started on its own at launch from a catalog in the project settings: Google Play receipts checked, purchases the store returns before the game is ready held for it, and one handle that buys, grants and confirms in the right order",
   "unity": "6000.0",
-  "documentationUrl": "https://github.com/riseongamestudio/IAP/blob/v1.0.0/README.md",
+  "documentationUrl": "https://github.com/riseongamestudio/IAP/blob/v1.0.1/README.md",
   "author": {
     "name": "RiseOn"
   },

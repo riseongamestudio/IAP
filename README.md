@@ -21,7 +21,7 @@ Dev thêm vào `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.riseon.iap": "1.0.0"
+    "com.riseon.iap": "1.0.1"
   },
   "scopedRegistries": [
     { "name": "RiseOn", "url": "https://upm.riseongamestudio.com", "scopes": [ "com.riseon" ] },
