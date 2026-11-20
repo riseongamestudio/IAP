@@ -102,7 +102,7 @@ using Cysharp.Threading.Tasks;
 using RiseOn.Firebase.RemoteConfig;
 using RiseOn.Iap;
 
-public sealed partial class GameIap : IapManagerBase {
+public sealed partial class IapManager : IapManagerBase {
     // Số gems một gói cho lấy từ remote config, nên chờ lần fetch lúc mở game.
     protected override UniTask WaitUntilCanGrantAsync() => RemoteConfigInit.WaitUntilCompleteAsync();
 
@@ -121,7 +121,7 @@ public sealed partial class GameIap : IapManagerBase {
     }
 
     protected override void OnGranted(IapOrder order) {
-        if (order.Product is IapProductId.NoAds) GameAds.Ins.RefreshAdsRemoved();
+        if (order.Product is IapProductId.NoAds) AdsManager.Ins.RefreshAdsRemoved();
     }
 
     protected override UniTask ForgetAsync(string transactionId) {
@@ -146,9 +146,9 @@ public sealed partial class GameIap : IapManagerBase {
 ## Gọi từ game
 
 ```csharp
-var result = await GameIap.Ins.PurchaseAsync(IapProductId.Gems, "shop");
-var price  = GameIap.Ins.Product(IapProductId.Gems).Price;   // "$0.99", trống khi cửa hàng chưa trả về
-var noAds  = GameIap.Ins.Owns(IapProductId.NoAds);           // ném lỗi với sản phẩm Consumable
+var result = await IapManager.Ins.PurchaseAsync(IapProductId.Gems, "shop");
+var price  = IapManager.Ins.Product(IapProductId.Gems).Price;   // "$0.99", trống khi cửa hàng chưa trả về
+var noAds  = IapManager.Ins.Owns(IapProductId.NoAds);           // ném lỗi với sản phẩm Consumable
 ```
 
 `IapProductId` là enum pack sinh từ danh sách sản phẩm: `no_ads` thành
@@ -165,13 +165,13 @@ lưu trong scene, prefab vẫn trỏ đúng sản phẩm khi sản phẩm khác 
 | `Failed` | Cửa hàng chưa trả về sản phẩm, thanh toán lỗi, chữ ký sai, hoặc manager ném lỗi khi cấp; Console có lý do |
 
 `PurchaseAsync` ném lỗi khi sản phẩm không có trong danh sách, khi không có manager
-nào chạy, hoặc khi đang có giao dịch khác chạy. `GameIap.Ins.IsPurchasing` cho biết điều
+nào chạy, hoặc khi đang có giao dịch khác chạy. `IapManager.Ins.IsPurchasing` cho biết điều
 cuối, dùng để khóa nút mua.
 
 Mọi lời gọi trên manager cũng có trên `IapSdk` (`IapSdk.Product`, `IapSdk.Owns`,
 `IapSdk.PurchaseAsync`...), cho code không biết lớp manager, ví dụ một pack khác.
 
-App Store bắt có nút Restore: gọi `GameIap.Ins.RestoreAsync()`. Giao dịch trả về đi qua
+App Store bắt có nút Restore: gọi `IapManager.Ins.RestoreAsync()`. Giao dịch trả về đi qua
 `GrantAsync` như mọi giao dịch khác. Google Play tự trả lại giao dịch mỗi lần mở game;
 món không tiêu hao đã xác nhận từ trước mà save không có (cài lại game, máy mới) cũng
 đi qua `GrantAsync`, và pack không xác nhận lại.
@@ -235,7 +235,7 @@ Trang báo vàng, build chỉ log cảnh báo, khi:
 
 Pack có fake store riêng, đăng ký qua API store tùy biến của Unity IAP. Nó chạy trong
 Editor, trên nền tảng không có cửa hàng, và trong build bật Fake Store. Sản phẩm mang
-Title, Description, Price của trang cài đặt, nên `GameIap.Ins.Product(...)` và shop của
+Title, Description, Price của trang cài đặt, nên `IapManager.Ins.Product(...)` và shop của
 game hiện đúng chữ và giá như sẽ thấy trên cửa hàng (giá kiểu `$0.99`, tiền tệ USD).
 
 Mỗi lần mua, một sheet trượt lên từ đáy màn hình, trên mọi canvas: tên, loại, mô tả và

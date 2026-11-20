@@ -53,7 +53,7 @@ namespace RiseOn.Iap.Editor {
 
         /// <summary>Asks where and writes the script; the settings take its class once Unity compiles it.</summary>
         internal static void Create() {
-            var path = EditorUtility.SaveFilePanelInProject("New IAP manager", "GameIap", "cs", "The class takes the file's name.");
+            var path = EditorUtility.SaveFilePanelInProject("New IAP manager", "IapManager", "cs", "The class takes the file's name.");
             if (string.IsNullOrEmpty(path)) return;
 
             var name = Path.GetFileNameWithoutExtension(path);
