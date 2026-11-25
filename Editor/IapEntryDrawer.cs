@@ -17,9 +17,11 @@ namespace RiseOn.Iap.Editor {
         private static readonly GUIContent descriptionLabel = new("Description", Fake);
         private static readonly GUIContent priceLabel       = new("Price", Fake + " In US dollars.");
 
-        // The labels' column, so the fields of the three lines start together: the id's label after the fold arrow, the others
-        // indented under it, as Unity indents what a foldout opens.
-        private static float LabelWidth => Section.Indent + new[] { idLabel, titleLabel, descriptionLabel }.Max(content => EditorStyles.label.CalcSize(content).x) + 4;
+        // The labels' column, so the fields of the three lines start together: the id's label after the fold arrow, the others at
+        // the row's start.
+        private static float LabelWidth => Mathf.Max(Section.Indent + Width(idLabel), Width(titleLabel), Width(descriptionLabel)) + 4;
+
+        private static float Width(GUIContent label) => EditorStyles.label.CalcSize(label).x;
 
         // The longest type name with the drop-down's arrow, so no type is cut.
         private static float TypeWidth => typeof(IapProductType).GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -70,7 +72,7 @@ namespace RiseOn.Iap.Editor {
 
             // A label in the labels' column, then a delayed text field up to right.
             static void Text(Rect line, InspectorProperty field, GUIContent label, float right) {
-                var labelRect = Rect.MinMaxRect(line.x + Section.Indent, line.y, line.x + LabelWidth, line.yMax);
+                var labelRect = Rect.MinMaxRect(line.x, line.y, line.x + LabelWidth, line.yMax);
                 EditorGUI.LabelField(labelRect, label);
 
                 EditorGUI.BeginChangeCheck();

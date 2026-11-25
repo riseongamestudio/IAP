@@ -4,6 +4,13 @@ Mọi thay đổi đáng kể của `com.riseon.iap` được ghi ở đây. Đ�
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo
 [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Sửa
+
+- Trang settings: nhãn Title và Description của một sản phẩm không còn thụt vào dưới
+  Id, mà bắt đầu ở đầu dòng.
+
 ## [2.0.0] - 2026-11-20
 
 ### Đổi
