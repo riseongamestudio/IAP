@@ -7,23 +7,14 @@ using UnityEngine;
 
 namespace RiseOn.Iap.Editor {
     /// <summary>
-    /// A product: its id and type, folding what the fake store returns for it under them, written through the value entries, with undo; its number is for serialized fields only.
+    /// A product of the Products list: its id and type on one line, written through the value entries, with undo; what the fake store returns for it is in the
+    /// Fake Store section, and its number is for serialized fields only.
     /// </summary>
     internal sealed class IapEntryDrawer : OdinValueDrawer<IapSettings.Entry> {
-        private static readonly GUIContent fakeCaption      = new("What the fake store returns, in the Editor or with Fake Store on; the stores return their own");
-        private static readonly GUIContent idLabel          = new("Id");
-        private static readonly GUIContent titleLabel       = new("Title", "Empty, the id");
-        private static readonly GUIContent descriptionLabel = new("Description");
-        private static readonly GUIContent priceLabel       = new("Price", "In US dollars");
-
-        // The labels' column, so the fields of the three lines start together: the id's label after the fold arrow, the others at
-        // the row's start.
-        private static float LabelWidth => Mathf.Max(Section.Indent + Width(idLabel), Width(titleLabel), Width(descriptionLabel)) + 4;
-
-        private static float Width(GUIContent label) => EditorStyles.label.CalcSize(label).x;
+        private static readonly GUIContent idLabel = new("Id");
 
         // The longest type name with the drop-down's arrow, so no type is cut.
-        private static float TypeWidth => typeof(IapProductType).GetFields(BindingFlags.Public | BindingFlags.Static)
+        internal static float TypeWidth => typeof(IapProductType).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(field => field.GetCustomAttribute<InspectorNameAttribute>()?.displayName ?? ObjectNames.NicifyVariableName(field.Name))
             .Max(name => EditorStyles.popup.CalcSize(new GUIContent(name)).x) + 8;
 
@@ -33,12 +24,12 @@ namespace RiseOn.Iap.Editor {
 
             var line      = EditorGUILayout.GetControlRect();
             var typeRect  = new Rect(line.xMax - TypeWidth, line.y, TypeWidth, line.height);
-            var labelRect = new Rect(line.x, line.y, LabelWidth, line.height);
+            var labelRect = new Rect(line.x, line.y, EditorStyles.label.CalcSize(idLabel).x + 4, line.height);
             var idRect    = Rect.MinMaxRect(labelRect.xMax, line.y, typeRect.x - 4, line.yMax);
 
             var text = (id.ValueEntry.WeakSmartValue as string ?? "").Trim();
             idLabel.tooltip = text.Length == 0 ? "As in the Play Console" : $"As in the Play Console; {nameof(IapProductId)}.{IapProductsFile.Member(text)} in code";
-            Property.State.Expanded = EditorGUI.Foldout(labelRect, Property.State.Expanded, idLabel, true);
+            EditorGUI.LabelField(labelRect, idLabel);
 
             // Delayed: the list is read once a typed id is done.
             EditorGUI.BeginChangeCheck();
@@ -47,40 +38,6 @@ namespace RiseOn.Iap.Editor {
             SettingsFocus.Drawn((Object) Property.Tree.WeakTargets[0], id.UnityPropertyPath, idRect);
 
             ChoiceFieldUtils.Enum(typeRect, type);
-
-            // With the fade the page's sections use.
-            if (Section.BeginFade(Property, Property.State.Expanded)) DrawFake();
-            Section.EndFade();
-        }
-
-        private void DrawFake() {
-            // One caption for the three fields, so that no field reads as what the stores sell.
-            EditorGUI.LabelField(EditorGUILayout.GetControlRect(), fakeCaption, EditorStyles.miniLabel);
-
-            // The price under the type, its label in the type's column.
-            var line = EditorGUILayout.GetControlRect();
-            var priceLabelRect = new Rect(line.xMax - TypeWidth, line.y, EditorStyles.label.CalcSize(priceLabel).x + 4, line.height);
-            var priceRect      = Rect.MinMaxRect(priceLabelRect.xMax, line.y, line.xMax, line.yMax);
-            Text(line, Property.Children["title"], titleLabel, line.xMax - TypeWidth - 4);
-            EditorGUI.LabelField(priceLabelRect, priceLabel);
-
-            var price = Property.Children["price"];
-            EditorGUI.BeginChangeCheck();
-            var newPrice = EditorGUI.DelayedFloatField(priceRect, price.ValueEntry.WeakSmartValue is float value ? value : 0);
-            if (EditorGUI.EndChangeCheck()) price.ValueEntry.WeakSmartValue = (float) System.Math.Round(Mathf.Max(0, newPrice), 2);
-
-            line = EditorGUILayout.GetControlRect();
-            Text(line, Property.Children["description"], descriptionLabel, line.xMax);
-
-            // A label in the labels' column, then a delayed text field up to right.
-            static void Text(Rect line, InspectorProperty field, GUIContent label, float right) {
-                var labelRect = Rect.MinMaxRect(line.x, line.y, line.x + LabelWidth, line.yMax);
-                EditorGUI.LabelField(labelRect, label);
-
-                EditorGUI.BeginChangeCheck();
-                var value = EditorGUI.DelayedTextField(Rect.MinMaxRect(labelRect.xMax, line.y, right, line.yMax), field.ValueEntry.WeakSmartValue as string ?? "");
-                if (EditorGUI.EndChangeCheck()) field.ValueEntry.WeakSmartValue = value;
-            }
         }
     }
 }

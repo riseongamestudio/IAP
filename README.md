@@ -192,9 +192,9 @@ sinh `IapProductId`). Inspector của asset chỉ có nút mở trang này.
 |---|---|
 | Stores: Apple Prefix | Ghép trước mọi mã trên App Store, nơi mã sản phẩm không trùng giữa các app của một team. Trống khi mã App Store giống danh sách |
 | Stores: Google Play Key | Play Console > Monetize with Play > Monetization setup > Licensing, chuỗi base64. Pack dùng nó kiểm chữ ký mọi giao dịch Google Play; App Store tự kiểm trên máy (StoreKit 2) |
-| Stores: Fake Store | Build mua từ fake store của pack (xem [Fake store](#fake-store)): không trừ tiền, không kiểm biên lai, để thử trước khi sản phẩm có trên cửa hàng. Editor luôn dùng fake store |
 | Manager | Lớp cài `IIapManager` của project, chỉ đọc, kèm field của nó |
-| Products | Mỗi sản phẩm: **Id**, mã sản phẩm như trên Play Console (rê chuột lên nhãn để xem tên trong `IapProductId`), và loại: Consumable, Non-Consumable, Subscription. Mũi tên trước **Id** mở ra **Title**, **Description**, **Price** (đô la Mỹ), những gì fake store trả về cho sản phẩm. Title trống thì fake store lấy mã. Cửa hàng thật trả dữ liệu của nó, không đọc ba ô này. Nút **+** trên thanh thêm sản phẩm (giá 0.99), **×** xóa sản phẩm, kéo tay nắm để đổi thứ tự |
+| Products | Mỗi sản phẩm một dòng: **Id**, mã sản phẩm như trên Play Console (rê chuột lên nhãn để xem tên trong `IapProductId`), và loại: Consumable, Non-Consumable, Subscription. Nút **+** trên thanh thêm sản phẩm (giá fake store 0.99), **×** xóa sản phẩm, kéo tay nắm để đổi thứ tự |
+| Fake Store | Ô trên thanh: build mua từ fake store của pack (xem [Fake store](#fake-store)): không trừ tiền, không kiểm biên lai, để thử trước khi sản phẩm có trên cửa hàng. Editor luôn dùng fake store, ô tick hay không. Bên trong là bảng những gì fake store trả về cho từng sản phẩm của mục Products, theo thứ tự đó: **Id** (chỉ đọc), **Title**, **Price** (đô la Mỹ), dòng dưới là **Description**. Title trống thì fake store lấy mã. Cửa hàng thật trả dữ liệu của nó, không đọc bảng này. Bảng sửa được cả khi ô trên thanh tắt |
 
 Sửa trên trang ghi thẳng vào asset; Ctrl+Z hoàn tác như mọi chỗ khác của Unity. Ghi
 file sản phẩm thì Unity compile lại, nên khi danh sách khác file, trang báo vàng kèm

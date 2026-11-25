@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using RiseOn.Utils;
 using Sirenix.OdinInspector;
@@ -71,10 +72,6 @@ namespace RiseOn.Iap {
         [Tooltip("Play Console > Monetize with Play > Monetization setup > Licensing: the base64 public key that checks the signature of every purchase.")]
         private string googlePlayKey;
 
-        [SerializeField, SectionGroup("Stores")]
-        [Tooltip("Builds buy from the pack's fake store, for testing before the products exist on the stores: it returns each product's Title, Description and Price, and a sheet asks how each purchase ends. It charges nothing and checks no receipt. The Editor always does.")]
-        private bool fakeStore;
-
         // The Editor puts the project's one manager class here, so the page offers no type to pick; a project without one
         // has none.
         [SerializeReference, SectionReference, ShowIf("@manager != null"), LabelText("Manager")]
@@ -84,6 +81,20 @@ namespace RiseOn.Iap {
         [SerializeField, SectionList(Item = "product", Foldable = true, New = "NewEntry")]
         [Tooltip("Ids as in the Play Console; on the App Store each gets the Apple prefix. Code names them as IapProductId members: no_ads is IapProductId.NoAds.")]
         private List<Entry> products = new();
+
+        private const string FakeStoreTip = "Builds buy from the pack's fake store while ticked, for testing before the products exist on the stores: it returns each product's Title, Price and "
+                                          + "Description below, and a sheet asks how each purchase ends. It charges nothing and checks no receipt. The Editor always buys from it, ticked or not.";
+
+        [SerializeField, SectionGroup("Fake Store", Toggle = nameof(fakeStore), OpenWhenOff = true, Tooltip = FakeStoreTip)]
+        private bool fakeStore;
+
+        // A place for the products' fake fields, which the Editor draws from the products list itself, so edits land there. Not the list:
+        // Odin draws a second member holding one list as a reference to the first. The empty setter keeps Odin from greying it out as read-only.
+        [ShowInInspector, SectionGroup("Fake Store"), HideLabel, FakeStoreTable]
+        private int FakeStoreProducts {
+            get => products.Count;
+            set { }
+        }
 
         /// <summary>
         /// The game's manager with the fields the page edited, kept by the Editor as an instance of the game's one manager class; the pack runs it.
@@ -122,6 +133,10 @@ namespace RiseOn.Iap {
         // The product the page's + adds: numbered, where Odin's list would add a 0 or copy the last number.
         private Entry NewEntry() => new(NewNumber(), "", IapProductType.Consumable, 0.99f);
 #endif
+
+        /// <summary>Marks the member the Editor draws as the fake store's table of the products.</summary>
+        [Conditional("UNITY_EDITOR"), AttributeUsage(AttributeTargets.Property)]
+        internal sealed class FakeStoreTableAttribute : Attribute { }
 
         /// <summary>The project's asset, or an empty catalog when the project never saved one.</summary>
         public static IapSettings Load() {

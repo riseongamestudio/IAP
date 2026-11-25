@@ -20,15 +20,11 @@ Mọi thay đổi đáng kể của `com.riseon.iap` được ghi ở đây. Đ�
   `IapSdk.Changed`, `IapSdk.Purchased`.
 - Bỏ `placement`: `PurchaseAsync` chỉ nhận sản phẩm, `IapOrder` không còn `Placement`.
 
-### Thêm
-
-- Trang settings: phần mở ra dưới mỗi sản phẩm có dòng chú thích nói ba ô Title,
-  Description, Price là những gì fake store trả về.
-
-### Sửa
-
-- Trang settings: nhãn Title và Description của một sản phẩm không còn thụt vào dưới
-  Id, mà bắt đầu ở đầu dòng.
+- Trang settings: mục Products chỉ còn mã và loại của mỗi sản phẩm, một dòng, không
+  gập mở. Title, Price, Description mà fake store trả về chuyển sang mục mới **Fake
+  Store** ở cuối trang: ô Fake Store (trước ở mục Stores) nằm trên thanh của mục, và
+  bên trong là bảng mỗi sản phẩm một hàng, sửa được cả khi ô tắt. Dữ liệu trong asset
+  giữ nguyên.
 
 ## [2.0.0] - 2026-11-20
 
