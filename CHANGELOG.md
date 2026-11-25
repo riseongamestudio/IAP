@@ -6,6 +6,25 @@ Mọi thay đổi đáng kể của `com.riseon.iap` được ghi ở đây. Đ�
 
 ## [Unreleased]
 
+### Đổi
+
+- Manager của game là lớp `partial` cài interface `IIapManager`, thay cho kế thừa
+  `IapManagerBase` (đã bỏ). Bốn hàm `WaitUntilCanGrantAsync`, `IsGranted`, `GrantAsync`,
+  `ForgetAsync` là `protected internal`: chỉ pack gọi được, nên lớp cài chúng kiểu
+  explicit (`UniTask IIapManager.GrantAsync(IapOrder order)`), và cài đủ cả bốn.
+  Source generator gắn thêm `sealed` cho lớp; lớp đang ghi `sealed` vẫn compile.
+- Manager không còn bọc `IapSdk`: game gọi thẳng `IapSdk.PurchaseAsync`, `IapSdk.Product`,
+  `IapSdk.Owns`, `IapSdk.IsPurchasing`, `IapSdk.RestoreAsync` và nghe event của `IapSdk`.
+- Hook `OnGranted` thành event `IapSdk.Granted`. Các hook `OnAttached`, `OnChanged`,
+  `OnPurchased` và event `Changed`, `Purchased` trên manager bị bỏ; nghe
+  `IapSdk.Changed`, `IapSdk.Purchased`.
+- Bỏ `placement`: `PurchaseAsync` chỉ nhận sản phẩm, `IapOrder` không còn `Placement`.
+
+### Thêm
+
+- Trang settings: phần mở ra dưới mỗi sản phẩm có dòng chú thích nói ba ô Title,
+  Description, Price là những gì fake store trả về.
+
 ### Sửa
 
 - Trang settings: nhãn Title và Description của một sản phẩm không còn thụt vào dưới

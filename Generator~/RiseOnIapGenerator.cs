@@ -10,21 +10,21 @@ using Microsoft.CodeAnalysis.Text;
 namespace RiseOn.Iap.Generator {
     /// <summary>
     /// Compiles into RiseOn.Iap the product enum the settings page lists.<br/>
-    /// Into the game's assembly it compiles, for the one class deriving from IapManagerBase, an <c>Ins</c> and the registration the pack starts it from; a second such class is an error.<br/>
+    /// Into the game's assembly it compiles, for the one class implementing IIapManager, <c>sealed</c>, an <c>Ins</c> and the registration the pack starts it from; a second such class is an error.<br/>
     /// Nothing is written to disk, so nobody can edit it.
     /// </summary>
     [Generator]
     public sealed class RiseOnIapGenerator : ISourceGenerator {
         private const string PackAssembly = "RiseOn.Iap";
-        private const string ManagerType  = "RiseOn.Iap.IapManagerBase";
+        private const string ManagerType  = "RiseOn.Iap.IIapManager";
         private const string ProductsFile = ".RiseOnIapGenerator.additionalfile";
 
         private static readonly DiagnosticDescriptor notPartial = new(
-            "RISEONIAP001", "IAP manager not partial", "{0} derives from IapManagerBase, so it must be a partial class, neither generic nor nested, for the IAP pack to find it and give it Ins",
+            "RISEONIAP001", "IAP manager not partial", "{0} implements IIapManager, so it must be a partial class, neither generic nor nested, for the IAP pack to find it and give it Ins",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
         private static readonly DiagnosticDescriptor notAlone = new(
-            "RISEONIAP003", "Several IAP managers", "{0} derives from IapManagerBase, and so does {1}; the IAP pack runs one manager, so only one class may",
+            "RISEONIAP003", "Several IAP managers", "{0} implements IIapManager, and so does {1}; the IAP pack runs one manager, so only one class may",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
         private static readonly DiagnosticDescriptor badLine = new(
@@ -49,7 +49,7 @@ namespace RiseOn.Iap.Generator {
             var mine  = new List<INamedTypeSymbol>();
             foreach (var declaration in receiver.Classes) {
                 var model = context.Compilation.GetSemanticModel(declaration.SyntaxTree);
-                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || type.IsAbstract || !Derives(type, manager)) continue;
+                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || type.IsAbstract || !Implements(type, manager)) continue;
                 if (found.ContainsKey(type)) continue;
 
                 found.Add(type, declaration);
@@ -73,7 +73,7 @@ namespace RiseOn.Iap.Generator {
                     continue;
                 }
 
-                context.AddSource($"{type.ToDisplayString().Replace('.', '_')}.IapManagerBase.g.cs", SourceText.From(Partial(type), Encoding.UTF8));
+                context.AddSource($"{type.ToDisplayString().Replace('.', '_')}.IIapManager.g.cs", SourceText.From(Partial(type), Encoding.UTF8));
             }
         }
 
@@ -83,7 +83,7 @@ namespace RiseOn.Iap.Generator {
                 if (assembly.Name is PackAssembly || !assembly.Modules.Any(module => module.ReferencedAssemblySymbols.Any(each => each.Name is PackAssembly))) continue;
 
                 foreach (var type in Types(assembly.GlobalNamespace)) {
-                    if (!type.IsAbstract && Derives(type, manager)) yield return type;
+                    if (type.TypeKind is TypeKind.Class && !type.IsAbstract && Implements(type, manager)) yield return type;
                 }
             }
         }
@@ -125,7 +125,8 @@ namespace RiseOn.Iap.Generator {
             return code.ToString();
         }
 
-        // Ins, and the registration that lets the pack find the class and keeps IL2CPP from stripping it.
+        // Sealed, so that no class derives from the game's and turns into a second manager; Ins; and the registration that lets the
+        // pack find the class and keeps IL2CPP from stripping it.
         private static string Partial(INamedTypeSymbol type) {
             var space  = type.ContainingNamespace.IsGlobalNamespace ? null : type.ContainingNamespace.ToDisplayString();
             var indent = space == null ? "" : "    ";
@@ -134,7 +135,7 @@ namespace RiseOn.Iap.Generator {
             if (space != null) code.Append($"namespace {space} {{\n");
             // The settings hold it by [SerializeReference], which wants [Serializable] on the class itself.
             if (!IsSerializable(type)) code.Append($"{indent}[global::System.Serializable]\n");
-            code.Append($"{indent}partial class {type.Name} {{\n");
+            code.Append($"{indent}sealed partial class {type.Name} {{\n");
             code.Append($"{indent}    /// <summary>The instance the IAP pack runs; throws before the first scene loads.</summary>\n");
             code.Append($"{indent}    public static {type.Name} Ins => global::RiseOn.Iap.IapSdk.GetManager<{type.Name}>();\n\n");
             code.Append($"{indent}    [global::UnityEngine.RuntimeInitializeOnLoadMethod(global::UnityEngine.RuntimeInitializeLoadType.AfterAssembliesLoaded)]\n");
@@ -149,12 +150,8 @@ namespace RiseOn.Iap.Generator {
             return type.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.SerializableAttribute");
         }
 
-        private static bool Derives(INamedTypeSymbol type, INamedTypeSymbol root) {
-            for (var current = type.BaseType; current != null; current = current.BaseType) {
-                if (SymbolEqualityComparer.Default.Equals(current, root)) return true;
-            }
-
-            return false;
+        private static bool Implements(INamedTypeSymbol type, INamedTypeSymbol root) {
+            return type.AllInterfaces.Contains(root, SymbolEqualityComparer.Default);
         }
 
         private sealed class Receiver : ISyntaxReceiver {

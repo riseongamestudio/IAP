@@ -114,10 +114,10 @@ namespace RiseOn.Iap.Editor {
 
             var candidates = IapManagerScripts.Candidates();
             if (candidates.Count > 1) {
-                yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{string.Join(", ", candidates.Select(type => type.FullName))} all derive from IapManagerBase, so none runs; keep one.");
+                yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{string.Join(", ", candidates.Select(type => type.FullName))} all implement IIapManager, so none runs; keep one.");
             } else if (candidates.Count == 0) {
                 // Only a catalog has something to grant; a project with none yet is warned.
-                yield return new SettingsIssue(BuildTarget.NoTarget, settings.Products.Count > 0, "No partial class derives from IapManagerBase, so paid purchases would never be granted nor confirmed, and Google Play refunds them after three days.", "New script", IapManagerScripts.Create);
+                yield return new SettingsIssue(BuildTarget.NoTarget, settings.Products.Count > 0, "No partial class implements IIapManager, so paid purchases would never be granted nor confirmed, and Google Play refunds them after three days.", "New script", IapManagerScripts.Create);
             } else if (IapManagerScripts.Problem(candidates[0]) is { } problem) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, problem + ".");
             } else if (settings.Manager?.GetType() != candidates[0]) {

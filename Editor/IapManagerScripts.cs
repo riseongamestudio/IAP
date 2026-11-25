@@ -14,7 +14,7 @@ namespace RiseOn.Iap.Editor {
     internal static class IapManagerScripts {
         /// <summary>Every class the pack could run; the source generator lets only one compile in an assembly.</summary>
         internal static List<Type> Candidates() {
-            return TypeCache.GetTypesDerivedFrom<IapManagerBase>().Where(type => !type.IsAbstract).ToList();
+            return TypeCache.GetTypesDerivedFrom<IIapManager>().Where(type => type.IsClass && !type.IsAbstract).ToList();
         }
 
         internal static string Problem(Type type) {
@@ -85,15 +85,18 @@ namespace RiseOn.Iap.Editor {
 
             if (indent.Length > 0) lines.Add($"namespace {space} {{");
             lines.AddRange(new[] {
-                $"{indent}// The project's one IAP manager. Partial: the IAP pack compiles {name}.Ins, the running instance, into it."
-              , $"{indent}public sealed partial class {name} : IapManagerBase {{"
+                $"{indent}// The project's one IAP manager. Partial: the IAP pack seals it and compiles {name}.Ins, the running instance, into it."
+              , $"{indent}public partial class {name} : IIapManager {{"
               , $"{indent}    // Wait for the game's save: a purchase the store returns at launch arrives before the first scene."
-              , $"{indent}    protected override UniTask WaitUntilCanGrantAsync() => UniTask.CompletedTask;"
+              , $"{indent}    UniTask IIapManager.WaitUntilCanGrantAsync() => UniTask.CompletedTask;"
               , ""
-              , $"{indent}    protected override bool IsGranted(string transactionId) => throw new System.NotImplementedException();"
+              , $"{indent}    bool IIapManager.IsGranted(string transactionId) => throw new System.NotImplementedException();"
               , ""
               , $"{indent}    // Give order.Product's content and record order.TransactionId in the same save."
-              , $"{indent}    protected override UniTask GrantAsync(IapOrder order) => throw new System.NotImplementedException();"
+              , $"{indent}    UniTask IIapManager.GrantAsync(IapOrder order) => throw new System.NotImplementedException();"
+              , ""
+              , $"{indent}    // The store will not hand this consumable's transaction again: drop its record from the save."
+              , $"{indent}    UniTask IIapManager.ForgetAsync(string transactionId) => UniTask.CompletedTask;"
               , $"{indent}}}"
             });
             if (indent.Length > 0) lines.Add("}");

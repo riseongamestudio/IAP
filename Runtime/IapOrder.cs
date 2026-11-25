@@ -22,17 +22,13 @@ namespace RiseOn.Iap {
         /// <summary>The answer to the purchase the pack is running, rather than one the store returned on its own.</summary>
         public bool Requested { get; }
 
-        /// <summary>What the game passed to the purchase this answers, for its own analytics; null when not <see cref="Requested"/>.</summary>
-        public string Placement { get; }
-
-        internal IapOrder(Order order, IapProductId product, string productId, IapProductType type, int quantity, bool requested, string placement) {
+        internal IapOrder(Order order, IapProductId product, string productId, IapProductType type, int quantity, bool requested) {
             Product       = product;
             ProductId     = productId;
             Type          = type;
             Quantity      = quantity;
             TransactionId = order.Info.TransactionID;
             Requested     = requested;
-            Placement     = placement;
         }
 
         public override string ToString() {

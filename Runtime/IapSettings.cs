@@ -78,8 +78,8 @@ namespace RiseOn.Iap {
         // The Editor puts the project's one manager class here, so the page offers no type to pick; a project without one
         // has none.
         [SerializeReference, SectionReference, ShowIf("@manager != null"), LabelText("Manager")]
-        [Tooltip("The project's one partial IapManagerBase class, taken by the pack: it grants every paid purchase. Its fields follow.")]
-        private IapManagerBase manager;
+        [Tooltip("The project's one partial IIapManager class, taken by the pack: it grants every paid purchase. Its fields follow.")]
+        private IIapManager manager;
 
         [SerializeField, SectionList(Item = "product", Foldable = true, New = "NewEntry")]
         [Tooltip("Ids as in the Play Console; on the App Store each gets the Apple prefix. Code names them as IapProductId members: no_ads is IapProductId.NoAds.")]
@@ -88,7 +88,7 @@ namespace RiseOn.Iap {
         /// <summary>
         /// The game's manager with the fields the page edited, kept by the Editor as an instance of the game's one manager class; the pack runs it.
         /// </summary>
-        public IapManagerBase Manager => manager;
+        public IIapManager Manager => manager;
 
         public IReadOnlyList<Entry> Products => products;
 

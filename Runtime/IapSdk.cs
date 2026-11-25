@@ -10,7 +10,7 @@ using UnityEngine.Purchasing.Security;
 namespace RiseOn.Iap {
     /// <summary>
     /// Unity IAP, connected before the first scene with the catalog from Project Settings > RiseOn > IAP: products fetched, then the account's purchases.<br/>
-    /// Every paid purchase goes to the game's one <see cref="IapManagerBase"/> class to be granted, then the pack confirms it; with no such class nothing can be bought.<br/>
+    /// Every paid purchase goes to the game's one <see cref="IIapManager"/> class to be granted, then the pack confirms it; with no such class nothing can be bought.<br/>
     /// Unity's thread only; every event comes on it.
     /// </summary>
     public static class IapSdk {
@@ -31,7 +31,7 @@ namespace RiseOn.Iap {
 
         private static IapSettings settings;
         private static Type managerType;
-        private static Func<IapManagerBase> createManager;
+        private static Func<IIapManager> createManager;
         private static bool managerConflict;
         private static StoreController store;
         private static IapFakeStore fakeStore;
@@ -51,10 +51,16 @@ namespace RiseOn.Iap {
         /// </summary>
         public static event Action<IapPurchase> Purchased;
 
+        /// <summary>
+        /// The manager gave an order's content and saved it; a new purchase is confirmed right after.<br/>
+        /// Also an order the store returned as confirmed already, which the game's save did not hold.
+        /// </summary>
+        public static event Action<IapOrder> Granted;
+
         private static IapSettings Settings => settings ??= IapSettings.Load();
 
         // Null before the first scene loads, or when the game has no manager class.
-        internal static IapManagerBase Manager { get; private set; }
+        internal static IIapManager Manager { get; private set; }
 
         /// <summary>The store returned the products and the account's purchases, or said it could not.</summary>
         public static bool IsReady => ready;
@@ -82,7 +88,7 @@ namespace RiseOn.Iap {
         }
 
         /// <summary>The running manager as its own class, for the manager's <c>Ins</c>.</summary>
-        public static T GetManager<T>() where T : IapManagerBase {
+        public static T GetManager<T>() where T : class, IIapManager {
             if (Manager is T manager) return manager;
 
             throw new InvalidOperationException(Manager != null
@@ -96,10 +102,10 @@ namespace RiseOn.Iap {
         /// For the code the pack compiles into the game's manager class, which calls it before the first scene; the game never does.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void Register(Type type, Func<IapManagerBase> create) {
+        public static void Register(Type type, Func<IIapManager> create) {
             if (managerType != null && managerType != type) {
                 // Two assemblies that do not reference each other; the Editor reports it too.
-                Debug.LogError($"{nameof(IapSdk)}: both {managerType.FullName} and {type.FullName} derive from {nameof(IapManagerBase)}, so neither runs and paid purchases wait unconfirmed; keep one");
+                Debug.LogError($"{nameof(IapSdk)}: both {managerType.FullName} and {type.FullName} implement {nameof(IIapManager)}, so neither runs and paid purchases wait unconfirmed; keep one");
                 managerConflict = true;
                 return;
             }
@@ -108,10 +114,8 @@ namespace RiseOn.Iap {
             createManager = create;
         }
 
-        // Hooks the manager to the events, then hands it the purchases paid before now.
-        private static void Start(IapManagerBase manager) {
-            manager.Attach();
-
+        // Hands the manager the purchases paid before now.
+        private static void Start() {
             var waiting = held.ToList();
             held.Clear();
             foreach (var order in waiting) GrantAsync(order).Forget();
@@ -120,12 +124,11 @@ namespace RiseOn.Iap {
         /// <summary>
         /// Opens the store's payment sheet.<br/>
         /// A paid purchase goes through the manager's grant and is confirmed before this returns <see cref="IapResult.Purchased"/>.<br/>
-        /// Throws while another purchase runs, and when no manager runs to grant it; a product the store has not returned gives <see cref="IapResult.Failed"/>.<br/>
-        /// <paramref name="placement"/> reaches the grant as <see cref="IapOrder.Placement"/>.
+        /// Throws while another purchase runs, and when no manager runs to grant it; a product the store has not returned gives <see cref="IapResult.Failed"/>.
         /// </summary>
-        public static async UniTask<IapResult> PurchaseAsync(IapProductId target, string placement = null) {
+        public static async UniTask<IapResult> PurchaseAsync(IapProductId target) {
             var id = Entry(target).Id;
-            if (Manager == null) throw new InvalidOperationException($"{nameof(IapSdk)}: no {nameof(IapManagerBase)} runs to grant {id}; the console says why");
+            if (Manager == null) throw new InvalidOperationException($"{nameof(IapSdk)}: no {nameof(IIapManager)} runs to grant {id}; the console says why");
             if (running != null) throw new InvalidOperationException($"{nameof(IapSdk)}: a purchase is running; {nameof(IsPurchasing)} tells when it ends");
 
             var product = store?.GetProductById(id);
@@ -134,7 +137,7 @@ namespace RiseOn.Iap {
                 return IapResult.Failed;
             }
 
-            var current = running = new Running(Settings.StoreId(id), placement);
+            var current = running = new Running(Settings.StoreId(id));
             store.PurchaseProduct(product);
             return await current.Source.Task;
         }
@@ -170,9 +173,9 @@ namespace RiseOn.Iap {
 
             Manager = CreateManager();
             if (Manager != null) {
-                Start(Manager);
+                Start();
             } else if (Settings.Products.Count > 0 && !managerConflict) {
-                Debug.LogError($"{nameof(IapSdk)}: no partial class derives from {nameof(IapManagerBase)}, so paid purchases wait unconfirmed");
+                Debug.LogError($"{nameof(IapSdk)}: no partial class implements {nameof(IIapManager)}, so paid purchases wait unconfirmed");
             }
 
             if (Settings.Products.Count == 0) {
@@ -210,7 +213,7 @@ namespace RiseOn.Iap {
         }
 
         // The settings keep the fields the page edited; a class without them, never opened there, starts as written.
-        private static IapManagerBase CreateManager() {
+        private static IIapManager CreateManager() {
             if (managerConflict || managerType == null) return null;
 
             var saved = Settings.Manager;
@@ -245,6 +248,7 @@ namespace RiseOn.Iap {
             readySource        = new UniTaskCompletionSource();
             Changed            = null;
             Purchased          = null;
+            Granted            = null;
         }
 
         private static void Listen(StoreController target, bool on) {
@@ -326,13 +330,13 @@ namespace RiseOn.Iap {
             regranting.Add(transaction);
 
             var (product, id, type, quantity) = Describe(confirmed);
-            var order = new IapOrder(confirmed, product, id, type, quantity, false, null);
+            var order = new IapOrder(confirmed, product, id, type, quantity, false);
             try {
-                await Manager.CallWaitUntilCanGrantAsync();
-                if (Manager.CallIsGranted(transaction)) return;
+                await Manager.WaitUntilCanGrantAsync();
+                if (Manager.IsGranted(transaction)) return;
 
-                await Manager.CallGrantAsync(order);
-                Guard(() => Manager.CallOnGranted(order));
+                await Manager.GrantAsync(order);
+                Raise(Granted, handler => handler(order));
             } catch (Exception exception) {
                 Debug.LogException(exception);
                 Debug.LogError($"{nameof(IapSdk)}: the grant of {order}, which the store holds as bought, threw; it is tried again when the store returns the purchases next");
@@ -365,16 +369,16 @@ namespace RiseOn.Iap {
             var transaction = pending.Info.TransactionID;
             var requested   = Answers(pending);
             var (product, id, type, quantity) = Describe(pending);
-            var order       = new IapOrder(pending, product, id, type, quantity, requested, requested ? running.Placement : null);
+            var order       = new IapOrder(pending, product, id, type, quantity, requested);
 
             // The same order for every game: the save first, a transaction it holds is given already, and a failing
             // report after the content is saved must not leave the purchase unconfirmed.
             granting.Add(transaction);
             try {
-                await Manager.CallWaitUntilCanGrantAsync();
-                if (!Manager.CallIsGranted(transaction)) {
-                    await Manager.CallGrantAsync(order);
-                    Guard(() => Manager.CallOnGranted(order));
+                await Manager.WaitUntilCanGrantAsync();
+                if (!Manager.IsGranted(transaction)) {
+                    await Manager.GrantAsync(order);
+                    Raise(Granted, handler => handler(order));
                 }
             } catch (Exception exception) {
                 Debug.LogException(exception);
@@ -450,7 +454,7 @@ namespace RiseOn.Iap {
 
             async UniTaskVoid ForgetAsync() {
                 try {
-                    await Manager.CallForgetAsync(transaction);
+                    await Manager.ForgetAsync(transaction);
                 } catch (Exception exception) {
                     Debug.LogException(exception);
                 }
@@ -462,7 +466,7 @@ namespace RiseOn.Iap {
         }
 
         // Each handler alone, so that one failing in the game neither stops the others nor the pack's own bookkeeping.
-        internal static void Raise<T>(T handlers, Action<T> call) where T : Delegate {
+        private static void Raise<T>(T handlers, Action<T> call) where T : Delegate {
             if (handlers == null) return;
 
             foreach (var handler in handlers.GetInvocationList()) Guard(() => call((T) handler));
@@ -540,12 +544,10 @@ namespace RiseOn.Iap {
 
         private sealed class Running {
             public readonly string StoreId;
-            public readonly string Placement;
             public readonly UniTaskCompletionSource<IapResult> Source = new();
 
-            public Running(string storeId, string placement) {
-                StoreId   = storeId;
-                Placement = placement;
+            public Running(string storeId) {
+                StoreId = storeId;
             }
         }
     }

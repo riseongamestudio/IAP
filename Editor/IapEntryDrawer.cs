@@ -10,12 +10,11 @@ namespace RiseOn.Iap.Editor {
     /// A product: its id and type, folding what the fake store returns for it under them, written through the value entries, with undo; its number is for serialized fields only.
     /// </summary>
     internal sealed class IapEntryDrawer : OdinValueDrawer<IapSettings.Entry> {
-        private const string Fake = "What the fake store returns, in the Editor or with Fake Store on; the stores return their own.";
-
+        private static readonly GUIContent fakeCaption      = new("What the fake store returns, in the Editor or with Fake Store on; the stores return their own");
         private static readonly GUIContent idLabel          = new("Id");
-        private static readonly GUIContent titleLabel       = new("Title", Fake + " Empty, the id.");
-        private static readonly GUIContent descriptionLabel = new("Description", Fake);
-        private static readonly GUIContent priceLabel       = new("Price", Fake + " In US dollars.");
+        private static readonly GUIContent titleLabel       = new("Title", "Empty, the id");
+        private static readonly GUIContent descriptionLabel = new("Description");
+        private static readonly GUIContent priceLabel       = new("Price", "In US dollars");
 
         // The labels' column, so the fields of the three lines start together: the id's label after the fold arrow, the others at
         // the row's start.
@@ -55,6 +54,9 @@ namespace RiseOn.Iap.Editor {
         }
 
         private void DrawFake() {
+            // One caption for the three fields, so that no field reads as what the stores sell.
+            EditorGUI.LabelField(EditorGUILayout.GetControlRect(), fakeCaption, EditorStyles.miniLabel);
+
             // The price under the type, its label in the type's column.
             var line = EditorGUILayout.GetControlRect();
             var priceLabelRect = new Rect(line.xMax - TypeWidth, line.y, EditorStyles.label.CalcSize(priceLabel).x + 4, line.height);
