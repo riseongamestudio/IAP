@@ -23,8 +23,8 @@ Mọi thay đổi đáng kể của `com.riseon.iap` được ghi ở đây. Đ�
 - Trang settings: mục Products chỉ còn mã và loại của mỗi sản phẩm, một dòng, không
   gập mở. Title, Price, Description mà fake store trả về chuyển sang mục mới **Fake
   Store** ở cuối trang: ô Fake Store (trước ở mục Stores) nằm trên thanh của mục, và
-  bên trong là bảng mỗi sản phẩm một hàng, sửa được cả khi ô tắt. Dữ liệu trong asset
-  giữ nguyên.
+  bên trong mỗi sản phẩm một mục con gập mở, thanh ghi mã, sửa được cả khi ô tắt. Dữ
+  liệu trong asset giữ nguyên.
 
 ## [2.0.0] - 2026-11-20
 
