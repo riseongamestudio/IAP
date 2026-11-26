@@ -10,7 +10,8 @@ using Microsoft.CodeAnalysis.Text;
 namespace RiseOn.Iap.Generator {
     /// <summary>
     /// Compiles into RiseOn.Iap the product enum the settings page lists.<br/>
-    /// Into the game's assembly it compiles, for the one class implementing IIapManager, <c>sealed</c>, an <c>Ins</c> and the registration the pack starts it from; a second such class is an error.<br/>
+    /// Into the game's assembly it compiles, for the one class implementing IIapManager, <c>sealed</c>, an <c>Ins</c> and the registration the pack starts it from.<br/>
+    /// A second such class is an error, and so are an interface extending IIapManager and an abstract class implementing it.<br/>
     /// Nothing is written to disk, so nobody can edit it.
     /// </summary>
     [Generator]
@@ -31,6 +32,14 @@ namespace RiseOn.Iap.Generator {
             "RISEONIAP002", "Unreadable product line", "{0} line {1} is not 'number member'; open Project Settings > RiseOn > IAP and press Apply to write it again",
             "RiseOn.Iap", DiagnosticSeverity.Error, true);
 
+        private static readonly DiagnosticDescriptor subInterface = new(
+            "RISEONIAP004", "Interface extends IIapManager", "{0} extends IIapManager; the manager class implements IIapManager itself, so no interface may extend it",
+            "RiseOn.Iap", DiagnosticSeverity.Error, true);
+
+        private static readonly DiagnosticDescriptor isAbstract = new(
+            "RISEONIAP005", "Abstract IAP manager", "{0} implements IIapManager but is abstract; the IAP pack makes the manager itself, so it must be a class it can make",
+            "RiseOn.Iap", DiagnosticSeverity.Error, true);
+
         public void Initialize(GeneratorInitializationContext context) {
             context.RegisterForSyntaxNotifications(() => new Receiver());
         }
@@ -47,9 +56,21 @@ namespace RiseOn.Iap.Generator {
             // Every class of this assembly that the pack could run, with the declaration that names it first.
             var found = new Dictionary<INamedTypeSymbol, ClassDeclarationSyntax>(SymbolEqualityComparer.Default);
             var mine  = new List<INamedTypeSymbol>();
+            foreach (var declaration in receiver.Interfaces) {
+                var model = context.Compilation.GetSemanticModel(declaration.SyntaxTree);
+                if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol type && Implements(type, manager)) {
+                    context.ReportDiagnostic(Diagnostic.Create(subInterface, declaration.Identifier.GetLocation(), type.ToDisplayString()));
+                }
+            }
+
             foreach (var declaration in receiver.Classes) {
                 var model = context.Compilation.GetSemanticModel(declaration.SyntaxTree);
-                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || type.IsAbstract || !Implements(type, manager)) continue;
+                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || !Implements(type, manager)) continue;
+                if (type.IsAbstract) {
+                    context.ReportDiagnostic(Diagnostic.Create(isAbstract, declaration.Identifier.GetLocation(), type.ToDisplayString()));
+                    continue;
+                }
+
                 if (found.ContainsKey(type)) continue;
 
                 found.Add(type, declaration);
@@ -156,9 +177,17 @@ namespace RiseOn.Iap.Generator {
 
         private sealed class Receiver : ISyntaxReceiver {
             public readonly List<ClassDeclarationSyntax> Classes = new();
+            public readonly List<InterfaceDeclarationSyntax> Interfaces = new();
 
             public void OnVisitSyntaxNode(SyntaxNode node) {
-                if (node is ClassDeclarationSyntax { BaseList: not null } declaration) Classes.Add(declaration);
+                switch (node) {
+                    case ClassDeclarationSyntax { BaseList: not null } declaration:
+                        Classes.Add(declaration);
+                        break;
+                    case InterfaceDeclarationSyntax { BaseList: not null } declaration:
+                        Interfaces.Add(declaration);
+                        break;
+                }
             }
         }
     }

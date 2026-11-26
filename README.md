@@ -93,6 +93,8 @@ Compile báo lỗi khi:
 | `RISEONIAP001` | Lớp cài `IIapManager` không `partial`, generic hoặc lồng trong lớp khác | Sửa lớp |
 | `RISEONIAP002` | File sản phẩm có dòng đọc không được, thường do conflict khi merge | Mở trang Project Settings > RiseOn > IAP, bấm **Apply** |
 | `RISEONIAP003` | Có hơn một lớp cài `IIapManager` | Giữ một lớp |
+| `RISEONIAP004` | Một interface kế thừa `IIapManager` | Lớp manager tự khai `: IIapManager`; bỏ interface đó |
+| `RISEONIAP005` | Lớp abstract cài `IIapManager`: pack tự tạo manager nên không tạo được lớp abstract | Bỏ `abstract`, gộp phần của lớp con vào lớp đó |
 
 Dev điền phần cấp đồ. Bốn hàm của `IIapManager` là `protected internal`: chỉ pack gọi
 được, code khác của game không gọi được, kể cả khi ép kiểu về `IIapManager`. Vì thế lớp

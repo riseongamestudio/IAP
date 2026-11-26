@@ -12,7 +12,9 @@ Mọi thay đổi đáng kể của `com.riseon.iap` được ghi ở đây. Đ�
   `IapManagerBase` (đã bỏ). Bốn hàm `WaitUntilCanGrantAsync`, `IsGranted`, `GrantAsync`,
   `ForgetAsync` là `protected internal`: chỉ pack gọi được, nên lớp cài chúng kiểu
   explicit (`UniTask IIapManager.GrantAsync(IapOrder order)`), và cài đủ cả bốn.
-  Source generator gắn thêm `sealed` cho lớp; lớp đang ghi `sealed` vẫn compile.
+  Source generator gắn thêm `sealed` cho lớp; lớp đang ghi `sealed` vẫn compile. Compile
+  báo lỗi khi một interface kế thừa `IIapManager` (`RISEONIAP004`) hay một lớp abstract
+  cài nó (`RISEONIAP005`).
 - Manager không còn bọc `IapSdk`: game gọi thẳng `IapSdk.PurchaseAsync`, `IapSdk.Product`,
   `IapSdk.Owns`, `IapSdk.IsPurchasing`, `IapSdk.RestoreAsync` và nghe event của `IapSdk`.
 - Hook `OnGranted` thành event `IapSdk.Granted`. Các hook `OnAttached`, `OnChanged`,
