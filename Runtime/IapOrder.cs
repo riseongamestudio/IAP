@@ -2,9 +2,8 @@
 
 namespace RiseOn.Iap {
     /// <summary>
-    /// A paid purchase for the game to grant.<br/>
-    /// A new one the pack confirms to the store once the grant returns; until then the store hands it again at every launch, so the grant must skip a transaction it already gave, by saving <see cref="TransactionId"/> in the same save as the content.<br/>
-    /// Also a non-consumable the store confirmed long ago, which the game's save does not hold, such as on Google Play after a reinstall or on a new device; that one needs no confirmation.
+    /// A paid consumable for its product's <see cref="IIapGranter"/> to give.<br/>
+    /// The pack confirms it to the store once the grant returns, and keeps its <see cref="TransactionId"/> until the store has, so that one handed again after a crash or a failed confirmation is not given twice.
     /// </summary>
     public sealed class IapOrder {
         /// <summary>The catalog id; the store's own id when the catalog no longer has the product.</summary>
@@ -37,7 +36,7 @@ namespace RiseOn.Iap {
     }
 
     public enum IapResult {
-        /// <summary>The game granted the purchase and the pack confirmed it to the store.</summary>
+        /// <summary>A consumable's granter gave the purchase, or the store keeps a non-consumable's, and the pack confirmed it to the store.</summary>
         Purchased
       , Canceled
 

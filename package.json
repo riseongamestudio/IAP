@@ -1,17 +1,17 @@
 {
   "name": "com.riseon.iap",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "displayName": "RiseOn IAP",
-  "description": "Unity IAP started on its own at launch from a catalog in the project settings: Google Play receipts checked, purchases the store returns before the game is ready held for it, and one handle that buys, grants and confirms in the right order",
+  "description": "Unity IAP started on its own at launch from a catalog in the project settings: Google Play receipts checked, consumables given by a granter per product before they are confirmed, and what the account owns kept by the store and read through IapSdk",
   "unity": "6000.3",
-  "documentationUrl": "https://github.com/riseongamestudio/IAP/blob/v2.0.0/README.md",
+  "documentationUrl": "https://github.com/riseongamestudio/IAP/blob/v3.0.0/README.md",
   "author": {
     "name": "RiseOn"
   },
   "dependencies": {
     "com.unity.purchasing": "5.4.3",
     "com.unity.ugui": "2.0.0",
-    "com.riseon.utils": "1.0.18",
+    "com.riseon.utils": "2.0.0",
     "com.cysharp.unitask": "2.5.11"
   }
 }

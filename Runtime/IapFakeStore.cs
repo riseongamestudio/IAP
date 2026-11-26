@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
 
 namespace RiseOn.Iap {
     /// <summary>
     /// The pack's fake store, through Unity IAP's custom store API: products as the catalog's Title, Description and Price, and each purchase ended on <see cref="IapFakeStoreSheet"/>.<br/>
+    /// A slow test card or Ask to Buy holds the purchase, then approves or declines it a few seconds later, as a store's answer arrives outside the purchase.<br/>
     /// Owned products last for the session, as in Unity's own fake store.
     /// </summary>
     internal sealed class IapFakeStore : Store, IStoreWrapper {
@@ -16,8 +18,14 @@ namespace RiseOn.Iap {
 
         private const string FakeReceipt = "RiseOnFakeReceipt";
 
+        // How long a held purchase waits for its answer: Play's slow test cards take minutes, a test here only seconds.
+        private const float HeldSeconds = 8;
+
         private readonly IapSettings settings;
         private readonly List<ConfirmedOrder> owned = new();
+
+        // Products with a held purchase not yet answered: buying one again fails, as on the stores, so the held answer never meets a new purchase of it.
+        private readonly HashSet<string> held = new();
         private ConnectionState state;
 
         public IapFakeStore(IapSettings settings) => this.settings = settings;
@@ -44,14 +52,22 @@ namespace RiseOn.Iap {
 
         public override void Purchase(ICart cart) {
             var product = cart.Items().First().Product;
+            if (held.Contains(product.definition.storeSpecificId)) {
+                PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.ExistingPurchasePending, "A held purchase of this product is not answered yet on the fake store"));
+                return;
+            }
+
             IapFakeStoreSheet.Show(product.metadata, Type(product.definition), answer => {
                 var info = new Info(Guid.NewGuid().ToString());
                 switch (answer) {
                     case IapFakeStoreSheet.Answer.Buy:
                         PurchaseCallback?.OnPurchaseSucceeded(new PendingOrder(cart, info));
                         break;
-                    case IapFakeStoreSheet.Answer.Defer:
+                    case IapFakeStoreSheet.Answer.ApproveLater:
+                    case IapFakeStoreSheet.Answer.DeclineLater:
+                        held.Add(product.definition.storeSpecificId);
                         PurchaseCallback?.OnPurchaseDeferred(new DeferredOrder(cart, info));
+                        AnswerHeldAsync(cart, info, answer is IapFakeStoreSheet.Answer.ApproveLater).Forget();
                         break;
                     case IapFakeStoreSheet.Answer.Decline:
                         PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.PaymentDeclined, "Declined on the fake store"));
@@ -61,6 +77,16 @@ namespace RiseOn.Iap {
                         break;
                 }
             });
+        }
+
+        private async UniTaskVoid AnswerHeldAsync(ICart cart, Info info, bool approved) {
+            await UniTask.Delay(TimeSpan.FromSeconds(HeldSeconds), DelayType.Realtime);
+            held.Remove(cart.Items().First().Product.definition.storeSpecificId);
+            if (approved) {
+                PurchaseCallback?.OnPurchaseSucceeded(new PendingOrder(cart, info));
+            } else {
+                PurchaseCallback?.OnPurchaseFailed(new FailedOrder(cart, PurchaseFailureReason.PaymentDeclined, "The held purchase was declined on the fake store"));
+            }
         }
 
         public override void FinishTransaction(PendingOrder order) {

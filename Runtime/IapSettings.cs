@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using RiseOn.Utils;
 using Sirenix.OdinInspector;
@@ -41,6 +40,10 @@ namespace RiseOn.Iap {
             [SerializeField]
             private float price;
 
+            // A consumable's; the page shows it only for those. AllowGenerics for the RiseOn type picker in place of Odin's.
+            [SerializeReference, AllowGenerics]
+            private IIapGranter granter;
+
             public Entry(int number, string id, IapProductType type, float price) {
                 this.number = number;
                 this.id     = id;
@@ -48,6 +51,7 @@ namespace RiseOn.Iap {
                 this.price  = price;
                 title       = "";
                 description = "";
+                granter     = null;
             }
 
             public int Number => number;
@@ -61,6 +65,9 @@ namespace RiseOn.Iap {
 
             /// <summary>The fake store's price in US dollars.</summary>
             public decimal Price => Math.Round((decimal) Mathf.Max(0, price), 2);
+
+            /// <summary>What gives a consumable's content; null for other types, which the store keeps.</summary>
+            public IIapGranter Granter => type is IapProductType.Consumable ? granter : null;
         }
 
         // The sections that stay open come before those that fold.
@@ -72,34 +79,15 @@ namespace RiseOn.Iap {
         [Tooltip("Play Console > Monetize with Play > Monetization setup > Licensing: the base64 public key that checks the signature of every purchase.")]
         private string googlePlayKey;
 
-        // The Editor puts the project's one manager class here, so the page offers no type to pick; a project without one
-        // has none.
-        [SerializeReference, SectionReference, ShowIf("@manager != null"), LabelText("Manager")]
-        [Tooltip("The project's one partial IIapManager class, taken by the pack: it grants every paid purchase. Its fields follow.")]
-        private IIapManager manager;
-
-        [SerializeField, SectionList(Item = "product", Foldable = true, New = "NewEntry")]
-        [Tooltip("Ids as in the Play Console; on the App Store each gets the Apple prefix. Code names them as IapProductId members: no_ads is IapProductId.NoAds.")]
-        private List<Entry> products = new();
-
-        private const string FakeStoreTip = "Builds buy from the pack's fake store while ticked, for testing before the products exist on the stores: it returns each product's Title, Price and "
-                                          + "Description below, and a sheet asks how each purchase ends. It charges nothing and checks no receipt. The Editor always buys from it, ticked or not.";
-
-        [SerializeField, SectionGroup("Fake Store", Toggle = nameof(fakeStore), OpenWhenOff = true, Tooltip = FakeStoreTip)]
+        [SerializeField, SectionGroup("Stores")]
+        [Tooltip("Builds buy from the pack's fake store while ticked, for testing before the products exist on the stores: it returns what each product's Fake Store "
+               + "holds, and a sheet asks how each purchase ends. It charges nothing and checks no receipt. The Editor always buys from it, ticked or not.")]
         private bool fakeStore;
 
-        // A place for the products' fake fields, which the Editor draws from the products list itself, so edits land there. Not the list:
-        // Odin draws a second member holding one list as a reference to the first. The empty setter keeps Odin from greying it out as read-only.
-        [ShowInInspector, SectionGroup("Fake Store"), HideLabel, FakeStoreTable]
-        private int FakeStoreProducts {
-            get => products.Count;
-            set { }
-        }
-
-        /// <summary>
-        /// The game's manager with the fields the page edited, kept by the Editor as an instance of the game's one manager class; the pack runs it.
-        /// </summary>
-        public IIapManager Manager => manager;
+        [SerializeField, SectionList(Item = "product", Foldable = true, New = "NewEntry")]
+        [Tooltip("Ids as in the Play Console; on the App Store each gets the Apple prefix. Code names them as IapProductId members: no_ads is IapProductId.NoAds. "
+               + "A consumable takes a Granter, the game's class that gives its content; the arrow before the id opens it, with what the fake store returns.")]
+        private List<Entry> products = new();
 
         public IReadOnlyList<Entry> Products => products;
 
@@ -133,10 +121,6 @@ namespace RiseOn.Iap {
         // The product the page's + adds: numbered, where Odin's list would add a 0 or copy the last number.
         private Entry NewEntry() => new(NewNumber(), "", IapProductType.Consumable, 0.99f);
 #endif
-
-        /// <summary>Marks the member the Editor draws as the fake store's table of the products.</summary>
-        [Conditional("UNITY_EDITOR"), AttributeUsage(AttributeTargets.Property)]
-        internal sealed class FakeStoreTableAttribute : Attribute { }
 
         /// <summary>The project's asset, or an empty catalog when the project never saved one.</summary>
         public static IapSettings Load() {
